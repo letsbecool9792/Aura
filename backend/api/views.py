@@ -1,10 +1,17 @@
 import requests
+import jwt
+from datetime import datetime, timedelta
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
+from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 import logging
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 logger = logging.getLogger(__name__)
 
@@ -169,3 +176,149 @@ def find_doctors(request):
             {"error": "Internal server error"}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@api_view(['POST'])
+def google_auth(request):
+    """
+    Handle Google OAuth2 authentication
+    Expected payload: {"token": "google_id_token", "role": "patient|doctor"}
+    """
+    try:
+        token = request.data.get('token')
+        role = request.data.get('role', 'patient')
+        
+        if not token:
+            return Response(
+                {"error": "Google ID token is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Verify the Google ID token
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                google_requests.Request(), 
+                settings.GOOGLE_OAUTH2_CLIENT_ID
+            )
+            
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise ValueError('Wrong issuer.')
+                
+        except ValueError as e:
+            logger.error(f"Invalid Google token: {str(e)}")
+            return Response(
+                {"error": "Invalid Google token"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        # Extract user information from Google token
+        google_id = idinfo['sub']
+        email = idinfo['email']
+        name = idinfo.get('name', '')
+        picture = idinfo.get('picture', '')
+        
+        # Get or create user
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email,
+                'first_name': name.split(' ')[0] if name else '',
+                'last_name': ' '.join(name.split(' ')[1:]) if len(name.split(' ')) > 1 else '',
+            }
+        )
+        
+        # Create JWT token for the user
+        payload = {
+            'user_id': user.id,
+            'email': user.email,
+            'name': f"{user.first_name} {user.last_name}".strip(),
+            'role': role,
+            'google_id': google_id,
+            'picture': picture,
+            'exp': datetime.utcnow() + timedelta(days=7)  # Token expires in 7 days
+        }
+        
+        jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        
+        return Response({
+            'success': True,
+            'token': jwt_token,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'name': f"{user.first_name} {user.last_name}".strip(),
+                'role': role,
+                'picture': picture,
+                'is_new_user': created
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in google_auth: {str(e)}")
+        return Response(
+            {"error": "Authentication failed"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+def verify_token(request):
+    """
+    Verify JWT token and return user information
+    Expected payload: {"token": "jwt_token"}
+    """
+    try:
+        token = request.data.get('token')
+        
+        if not token:
+            return Response(
+                {"error": "Token is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            
+            return Response({
+                'success': True,
+                'user': {
+                    'id': payload.get('user_id'),
+                    'email': payload.get('email'),
+                    'name': payload.get('name'),
+                    'role': payload.get('role'),
+                    'picture': payload.get('picture'),
+                }
+            })
+            
+        except jwt.ExpiredSignatureError:
+            return Response(
+                {"error": "Token has expired"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except jwt.InvalidTokenError:
+            return Response(
+                {"error": "Invalid token"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+    except Exception as e:
+        logger.error(f"Error in verify_token: {str(e)}")
+        return Response(
+            {"error": "Token verification failed"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+def auth_success(request):
+    """Success callback for OAuth flow"""
+    return JsonResponse({
+        'success': True,
+        'message': 'Authentication successful'
+    })
+
+@api_view(['GET'])
+def auth_logout(request):
+    """Logout callback"""
+    return JsonResponse({
+        'success': True,
+        'message': 'Logged out successfully'
+    })
