@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../providers/AuthProvider';
+import { googleAuth } from '../services/googleAuth';
+import { backendAuth } from '../services/backendAuth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -49,28 +51,50 @@ export default function Welcome() {
     setIsAuthenticating(true);
     
     try {
-      // Simulate Google authentication
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Step 1: Authenticate with Google
+      const googleResult = await googleAuth.signIn();
       
-      // Mock Google user data
-      const googleUser = {
-        name: 'John Doe',
-        email: 'john.doe@gmail.com',
-        id: 'google_' + Math.random().toString(36).substring(2, 15),
-      };
-      
-      // Login with Google data (temporary auth)
+      if (!googleResult.success || !googleResult.token || !googleResult.user) {
+        Alert.alert('Error', googleResult.error || 'Google authentication failed');
+        return;
+      }
+
+      // Step 2: Authenticate with backend using Google ID token
+      const backendResult = await backendAuth.authenticateWithGoogle(
+        googleResult.token,
+        'patient'
+      );
+
+      if (!backendResult.success || !backendResult.token || !backendResult.user) {
+        Alert.alert('Error', backendResult.error || 'Backend authentication failed');
+        return;
+      }
+
+      // Step 3: Set auth token for future API calls
+      backendAuth.setAuthToken(backendResult.token);
+
+      // Step 4: Login with backend user data
       await login({
-        role: 'patient',
-        name: googleUser.name,
-        walletAddress: 'google-auth-temp',
+        role: backendResult.user.role as 'patient' | 'doctor',
+        name: backendResult.user.name,
+        walletAddress: 'google-auth-temp', // This will be updated later with Web3 wallet
+        token: backendResult.token,
+        email: backendResult.user.email,
+        picture: backendResult.user.picture,
       });
-      
-      // Navigate directly to Web3 page
-      router.push('/(auth)/web3login');
-      
+
+      // Step 5: Navigate to appropriate page
+      if (backendResult.user.is_new_user) {
+        // New user - go to Web3 setup
+        router.push('/(auth)/web3login');
+      } else {
+        // Existing user - go to app
+        router.push('/(app)/(patient)/finder');
+      }
+
     } catch (error) {
-      Alert.alert('Error', 'Google authentication failed');
+      console.error('Authentication error:', error);
+      Alert.alert('Error', 'Authentication failed. Please try again.');
     } finally {
       setIsAuthenticating(false);
     }

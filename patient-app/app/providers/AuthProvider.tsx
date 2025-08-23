@@ -4,10 +4,26 @@ import * as SecureStore from 'expo-secure-store';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 // Define the shape of our authentication context
+interface User {
+  role: 'patient' | 'doctor' | null;
+  name: string | null;
+  walletAddress: string | null;
+  token?: string | null;
+  email?: string | null;
+  picture?: string | null;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: { role: 'patient' | 'doctor' | null; name: string | null; walletAddress: string | null } | null;
-  login: (userData: { role: 'patient' | 'doctor'; name: string; walletAddress: string }) => void;
+  user: User | null;
+  login: (userData: { 
+    role: 'patient' | 'doctor'; 
+    name: string; 
+    walletAddress: string; 
+    token?: string;
+    email?: string;
+    picture?: string;
+  }) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -19,7 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const SESSION_KEY = 'user_session';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ role: 'patient' | 'doctor' | null; name: string | null; walletAddress: string | null } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigationState = useRootNavigationState();
 
@@ -42,14 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // The login function for the app
-  const login = async (userData: { role: 'patient' | 'doctor'; name: string; walletAddress: string }) => {
+  const login = async (userData: { 
+    role: 'patient' | 'doctor'; 
+    name: string; 
+    walletAddress: string; 
+    token?: string;
+    email?: string;
+    picture?: string;
+  }) => {
     try {
       // In a real app, this would be a real token from a login service
       const sessionToken = JSON.stringify(userData);
       await SecureStore.setItemAsync(SESSION_KEY, sessionToken);
       setUser(userData);
       console.log('Login successful:', userData);
-      router.replace('/(app)/(patient)'); // Navigate to the main app after login
+      router.replace('/(app)/(patient)/finder'); // Navigate to the main app after login
     } catch (e) {
       console.error('Failed to log in:', e);
     }
