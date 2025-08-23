@@ -1,3 +1,4 @@
+import "@ethersproject/shims";
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,65 +8,145 @@ import {
   SafeAreaView,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../providers/AuthProvider';
+import { ethers } from 'ethers';
+import * as WebBrowser from "@toruslabs/react-native-web-browser";
+import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+import Web3Auth, { ChainNamespace, LOGIN_PROVIDER, WEB3AUTH_NETWORK } from "@web3auth/react-native-sdk";
+import EncryptedStorage from "react-native-encrypted-storage";
+
+// Configuration
+const scheme = "patientapp"; // Replace with your app's scheme
+const redirectUrl = `${scheme}://auth`;
+const WEB3AUTH_CLIENT_ID = process.env.EXPO_PUBLIC_WEB3AUTH_CLIENT_ID;
+
+const chainConfig = {
+  chainNamespace: ChainNamespace.EIP155,
+  chainId: "0xaa36a7", // Sepolia testnet
+  rpcTarget: "https://1rpc.io/sepolia",
+  displayName: "Ethereum Sepolia Testnet",
+  blockExplorerUrl: "https://sepolia.etherscan.io",
+  ticker: "ETH",
+  tickerName: "Ethereum",
+  decimals: 18,
+  logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+};
+
+const ethereumPrivateKeyProvider = new EthereumPrivateKeyProvider({
+  config: {
+    chainConfig,
+  },
+});
 
 export default function Web3Login() {
   const [name, setName] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
   const { login, user } = useAuth();
 
-  // Pre-fill name if user already has Google auth data
   useEffect(() => {
-    if (user?.name && user.walletAddress === 'google-auth-temp') {
-      setName(user.name);
-    }
-  }, [user]);
+    const initWeb3Auth = async () => {
+      try {
+        const web3authSDK = new Web3Auth(WebBrowser, EncryptedStorage, {
+          clientId: WEB3AUTH_CLIENT_ID!,
+          redirectUrl,
+          network: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET, // or TESTNET
+          privateKeyProvider: ethereumPrivateKeyProvider,
+        });
 
-  const handleConnectWallet = async () => {
+        await web3authSDK.init();
+        setWeb3auth(web3authSDK);
+
+        if (user?.name) {
+          setName(user.name);
+        }
+      } catch (e) {
+        console.error('Web3Auth initialization error:', e);
+        Alert.alert('Error', 'Web3Auth failed to initialize.');
+      }
+    };
+
+    initWeb3Auth();
+  }, []);
+
+  // Handler for Google social login
+  const handleSocialLogin = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter your name');
       return;
     }
+    if (!web3auth) {
+      Alert.alert('Error', 'Web3Auth not initialized.');
+      return;
+    }
 
     setIsConnecting(true);
-    
+
     try {
-      // Simulate MetaMask connection
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate a mock wallet address
-      const mockAddress = '0x' + Math.random().toString(16).substring(2, 42);
-      setWalletAddress(mockAddress);
-      
-      // Login with user data
-      await login({
-        role: 'patient',
-        name: name.trim(),
-        walletAddress: mockAddress,
+      await web3auth.login({
+        loginProvider: LOGIN_PROVIDER.GOOGLE,
       });
-      
+
+      if (web3auth.connected) {
+        const ethersProvider = new ethers.BrowserProvider(ethereumPrivateKeyProvider);
+        const signer = await ethersProvider.getSigner();
+        const address = await signer.getAddress();
+
+        await login({
+          role: 'patient',
+          name: name.trim(),
+          walletAddress: address,
+        });
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to connect wallet');
+      console.error('Failed to log in with Google:', error);
+      Alert.alert('Error', 'Failed to log in with Google.');
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleSkipWallet = async () => {
+  // Handler for email passwordless login
+  const handleEmailLogin = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter your name');
       return;
     }
+    if (!web3auth) {
+      Alert.alert('Error', 'Web3Auth not initialized.');
+      return;
+    }
 
-    // Login without wallet (for demo purposes)
-    await login({
-      role: 'patient',
-      name: name.trim(),
-      walletAddress: 'demo-wallet',
-    });
+    setIsConnecting(true);
+
+    try {
+      await web3auth.login({
+        loginProvider: LOGIN_PROVIDER.EMAIL_PASSWORDLESS,
+        extraLoginOptions: {
+          login_hint: name.trim(), // Using name as email hint
+        },
+      });
+
+      if (web3auth.connected) {
+        const ethersProvider = new ethers.BrowserProvider(ethereumPrivateKeyProvider);
+        const signer = await ethersProvider.getSigner();
+        const address = await signer.getAddress();
+
+        await login({
+          role: 'patient',
+          name: name.trim(),
+          walletAddress: address,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to log in with email:', error);
+      Alert.alert('Error', 'Failed to log in with email.');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleBackToWelcome = () => {
@@ -81,10 +162,7 @@ export default function Web3Login() {
           </TouchableOpacity>
           <Text style={styles.title}>Connect Wallet</Text>
           <Text style={styles.subtitle}>
-            {user?.walletAddress === 'google-auth-temp' 
-              ? 'Great! Now connect your Web3 wallet for enhanced security'
-              : 'Connect your wallet or continue without it'
-            }
+            Create a wallet instantly with social login.
           </Text>
         </View>
 
@@ -99,37 +177,39 @@ export default function Web3Login() {
               onChangeText={setName}
             />
           </View>
+          
+          <TouchableOpacity
+            style={[styles.socialButton, isConnecting && styles.disabledButton]}
+            onPress={handleSocialLogin}
+            disabled={isConnecting}
+          >
+            {isConnecting ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>Sign In with Google</Text>
+            )}
+          </TouchableOpacity>
 
-          {walletAddress ? (
-            <View style={styles.walletInfo}>
-              <Text style={styles.walletLabel}>Connected Wallet:</Text>
-              <Text style={styles.walletAddress}>
-                {walletAddress.substring(0, 6)}...{walletAddress.substring(38)}
-              </Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.connectButton, isConnecting && styles.disabledButton]}
-              onPress={handleConnectWallet}
-              disabled={isConnecting}
-            >
-              <Text style={styles.connectButtonText}>
-                {isConnecting ? 'Connecting...' : '🦊 Connect MetaMask'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.separator}>
+            <Text style={styles.separatorText}>OR</Text>
+          </View>
 
           <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkipWallet}
+            style={[styles.emailButton, isConnecting && styles.disabledButton]}
+            onPress={handleEmailLogin}
+            disabled={isConnecting}
           >
-            <Text style={styles.skipButtonText}>Continue without wallet</Text>
+            {isConnecting ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>📧 Login with Email</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Connecting your wallet enables enhanced security features
+            A secure wallet will be created automatically for you.
           </Text>
         </View>
       </View>
@@ -137,6 +217,7 @@ export default function Web3Login() {
   );
 }
 
+// Add emailButton style
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -192,48 +273,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ffffff',
   },
-  connectButton: {
-    backgroundColor: '#f6851b',
+  socialButton: {
+    backgroundColor: '#4285F4',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
-  connectButtonText: {
+  emailButton: {
+    backgroundColor: '#34a853',
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  buttonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  disabledButton: {
-    backgroundColor: '#4a5568',
-  },
-  skipButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-    borderRadius: 8,
+  separator: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#16213e',
+    marginVertical: 10,
   },
-  skipButtonText: {
+  separatorText: {
     color: '#8892b0',
     fontSize: 16,
-  },
-  walletInfo: {
-    backgroundColor: '#1a1a2e',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#0f3460',
-  },
-  walletLabel: {
-    fontSize: 14,
-    color: '#8892b0',
-    marginBottom: 4,
-  },
-  walletAddress: {
-    fontSize: 16,
-    color: '#ffffff',
-    fontFamily: 'monospace',
+    marginHorizontal: 10,
   },
   footer: {
     alignItems: 'center',

@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync(SESSION_KEY, sessionToken);
       setUser(userData);
       console.log('Login successful:', userData);
-      router.replace('/(app)'); // Navigate to the main app after login
+      router.replace('/(app)/(patient)'); // Navigate to the main app after login
     } catch (e) {
       console.error('Failed to log in:', e);
     }
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.deleteItemAsync(SESSION_KEY);
       setUser(null);
       console.log('Logout successful');
-      router.replace('/(auth)'); // Navigate back to the auth flow
+      router.replace('/(auth)/welcome'); // Navigate back to the auth flow
     } catch (e) {
       console.error('Failed to log out:', e);
     }
