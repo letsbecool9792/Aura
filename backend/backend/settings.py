@@ -194,3 +194,12 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH2_CLIENT_SECRET')
 # Login/Logout URLs
 LOGIN_REDIRECT_URL = '/api/auth/success/'
 LOGOUT_REDIRECT_URL = '/api/auth/logout/'
+
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
