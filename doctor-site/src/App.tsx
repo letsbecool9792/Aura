@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PatientDataSharing from './PatientDataSharing';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -65,6 +66,16 @@ function App() {
               }`}
             >
               Settings
+            </button>
+            <button
+              onClick={() => setActiveTab('patient-sharing')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'patient-sharing'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📱 Patient Sharing
             </button>
           </div>
         </div>
@@ -177,6 +188,10 @@ function App() {
               <p className="text-gray-600">Settings and configuration options will be implemented here.</p>
             </div>
           </div>
+        )}
+
+        {activeTab === 'patient-sharing' && (
+          <PatientDataSharing />
         )}
       </main>
     </div>

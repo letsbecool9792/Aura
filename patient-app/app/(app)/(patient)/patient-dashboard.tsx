@@ -248,6 +248,20 @@ export default function PatientDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Fake Vault Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📱 Share Health Info</Text>
+          <Text style={styles.description}>
+            Quickly share your health information with doctors via QR code scanning
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#10B981' }]} 
+            onPress={() => router.push("/(app)/(patient)/fake-vault" as any)}
+          >
+            <Text style={styles.scanButtonText}>📱 Share with Doctor</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✏️ Add New Record</Text>
