@@ -10,12 +10,19 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@providers/AuthProvider";
-import { AppKitButton, useAppKit } from "@reown/appkit-ethers-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 
 export default function Web3Login() {
   const [name, setName] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
   const { login, user } = useAuth();
-  const { address } = useAppKit();
+  
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
+  });
 
   // Pre-fill name if user already has Google auth data
   useEffect(() => {
@@ -24,18 +31,47 @@ export default function Web3Login() {
     }
   }, [user]);
 
-  const handleWalletConnected = async (walletAddress: string) => {
+  const handleConnectWallet = async () => {
     if (!name.trim()) {
       Alert.alert("Error", "Please enter your name");
       return;
     }
+    setIsConnecting(true);
 
     try {
+      // Simulate wallet connection
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Generate a mock wallet address
+      const mockAddress = "0x" + Math.random().toString(16).substring(2, 42);
+      setWalletAddress(mockAddress);
+
+      // Login as patient
       await login({
         role: "patient",
         name: name.trim(),
-        walletAddress,
+        walletAddress: mockAddress,
       });
+    } catch (error) {
+      Alert.alert("Error", "Failed to connect wallet");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSkipWallet = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Please enter your name");
+      return;
+    }
+    try {
+      // Login with temporary data
+      await login({
+        role: "patient",
+        name: name.trim(),
+        walletAddress: "google-auth-temp",
+      });
+      router.push("/(app)/(patient)/patient-dashboard");
     } catch (error) {
       Alert.alert("Error", "Failed to complete login");
     }
@@ -45,8 +81,18 @@ export default function Web3Login() {
     router.back();
   };
 
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={["#000000ff", "#1a1a1aff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
       <View style={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity
@@ -69,22 +115,50 @@ export default function Web3Login() {
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
-              placeholderTextColor="#666"
+              placeholderTextColor="#bdc3c7"
               value={name}
               onChangeText={setName}
             />
           </View>
 
-          <AppKitButton
-            onConnect={handleWalletConnected}
-            style={styles.continueButton}
-            textStyle={styles.continueButtonText}
-          />
+          {walletAddress ? (
+            <View style={styles.walletInfo}>
+              <Text style={styles.walletLabel}>Connected Wallet:</Text>
+              <Text style={styles.walletAddress}>
+                {walletAddress
+                  ? `${walletAddress.substring(
+                      0,
+                      6
+                    )}...${walletAddress.substring(38)}`
+                  : "Not connected"}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.connectButton,
+                isConnecting && styles.disabledButton,
+              ]}
+              onPress={handleConnectWallet}
+              disabled={isConnecting}
+            >
+              <Text style={styles.connectButtonText}>
+                {isConnecting ? "Connecting..." : "🦊 Connect Wallet"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={handleSkipWallet}
+          >
+            <Text style={styles.skipButtonText}>Continue without wallet</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Welcome to Aura - Your secure healthcare platform
+            If you aren't familiar with Metamask, visit their website for further information
           </Text>
         </View>
       </View>
@@ -95,7 +169,13 @@ export default function Web3Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f23",
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
   },
   content: {
     flex: 1,
@@ -104,7 +184,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 50,
+    marginBottom: 40,
   },
   backButton: {
     position: "absolute",
@@ -114,18 +194,21 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 24,
-    color: "#8892b0",
+    color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
+    fontSize: 36,
+    fontWeight: "normal",
     color: "#ffffff",
     marginBottom: 10,
+    fontFamily: "SpaceGrotesk_Bold",
   },
   subtitle: {
-    fontSize: 18,
-    color: "#8892b0",
+    fontSize: 20,
+    color: "#e5e5e5",
     textAlign: "center",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   form: {
     gap: 24,
@@ -137,26 +220,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   input: {
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 1,
-    borderColor: "#16213e",
+    borderColor: "#bdc3c7",
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
     color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Regular",
   },
-  continueButton: {
-    backgroundColor: "#f6851b",
+  connectButton: {
+    backgroundColor: "#ffffff",
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
-  continueButtonText: {
+  disabledButton: {
+    backgroundColor: "#d3d3d3",
+  },
+  connectButtonText: {
+    color: "#2c3e50",
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
+  },
+  skipButton: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  skipButtonText: {
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
+  },
+  walletInfo: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    borderColor: "#bdc3c7",
+    borderWidth: 1,
+  },
+  walletLabel: {
+    fontSize: 14,
+    color: "#e5e5e5",
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  walletAddress: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   footer: {
     alignItems: "center",
@@ -164,7 +287,8 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#4a5568",
+    color: "#a0a0a0",
     textAlign: "center",
+    fontFamily: "SpaceGrotesk_Regular",
   },
 });

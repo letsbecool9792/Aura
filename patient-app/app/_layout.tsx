@@ -1,7 +1,28 @@
-import { Stack } from "expo-router";
 import { AuthProvider } from "../providers/AuthProvider";
+import {
+  useFonts,
+  EBGaramond_400Regular,
+  EBGaramond_600SemiBold,
+} from "@expo-google-fonts/eb-garamond";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect } from "react";
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    EBGaramond: EBGaramond_400Regular,
+    "EBGaramond-SemiBold": EBGaramond_600SemiBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <AuthProvider>
       <Stack

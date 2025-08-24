@@ -14,16 +14,10 @@ createAppKit({
 });
 
 export default function AuthLayout() {
-  const { isAuthenticated, userRole } = useAuth();
+  const { isAuthenticated, userRole, user } = useAuth();
 
-  // If user is authenticated, redirect to appropriate dashboard
-  if (isAuthenticated) {
-    // Redirect to specific dashboard based on role
-    if (userRole === "patient") {
-      return <Redirect href="/(app)/(patient)/patient-dashboard" />;
-    } else if (userRole === "doctor") {
-      return <Redirect href="/(app)/(doctor)/doctor-dashboard" />;
-    }
+  if (isAuthenticated && userRole === "patient") {
+    return <Redirect href="/(app)/(patient)/patient-dashboard" />;
   }
 
   return (
@@ -36,9 +30,7 @@ export default function AuthLayout() {
         }}
       >
         <Stack.Screen name="welcome" options={{ animation: "none" }} />
-        <Stack.Screen name="role-selection" />
         <Stack.Screen name="web3login" />
-        <Stack.Screen name="doctor-verification" />
       </Stack>
       <AppKit />
     </>
