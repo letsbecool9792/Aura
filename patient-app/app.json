@@ -35,10 +35,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-camera"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+      "expo-camera",
+      "expo-font"
+    ]
   }
 }

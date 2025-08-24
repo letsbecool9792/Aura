@@ -4,48 +4,60 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Animated,
   Dimensions,
   Alert,
+  Image,
+  StatusBar,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../providers/AuthProvider";
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk"; // New font package
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as SplashScreen from "expo-splash-screen";
+import { SvgXml } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
+// Prevent the splash screen from auto-hiding while we load the fonts
+SplashScreen.preventAutoHideAsync();
+
 export default function Welcome() {
-  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const circleAnim = useRef(new Animated.Value(0)).current;
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { login } = useAuth();
 
-  useEffect(() => {
-    const startBounce = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bounceAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bounceAnim, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-
-    startBounce();
-  }, [bounceAnim]);
-
-  const translateY = bounceAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -20],
+  // Load the desired fonts
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
   });
 
-  const handleGoogleAuth = async () => {
+  useEffect(() => {
+    // Hide the splash screen once fonts are loaded
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+
+    // Start circle animation
+    Animated.timing(circleAnim, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
+  }, [fontsLoaded, circleAnim]);
+
+  // If fonts are not loaded yet, return null to prevent rendering
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  const handleSignInWithGoogle = async () => {
     setIsAuthenticating(true);
 
     try {
@@ -59,88 +71,107 @@ export default function Welcome() {
         id: "google_" + Math.random().toString(36).substring(2, 15),
       };
 
-      // Login with Google data (temporary auth)
+      // Login with temporary data
       await login({
-        role: "patient",
+        role: "pending", // Set role as pending until selection
         name: googleUser.name,
         walletAddress: "google-auth-temp",
       });
 
-      // Navigate directly to Web3 page
+      // Navigate to web3login after successful sign-in
       router.push("/(auth)/web3login");
     } catch (error) {
-      Alert.alert("Error", "Google authentication failed");
+      // Use a custom modal instead of Alert.alert
+      console.error("Google authentication failed:", error);
     } finally {
       setIsAuthenticating(false);
     }
   };
 
-  const handleGetStarted = () => {
-    router.push("/(auth)/role-selection");
-  };
+  const scale = circleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 2],
+  });
+
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Bouncing Image */}
-        <Animated.View
-          style={[
-            styles.imageContainer,
-            {
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imageText}>🏥</Text>
-            <Text style={styles.imageLabel}>AURA Health</Text>
-          </View>
-        </Animated.View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+      <LinearGradient
+        // Metallic, chrome-like gradient
+        colors={["#000000ff", "#181c2cff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
+      <Animated.View style={[styles.circle, { transform: [{ scale }] }]} />
 
-        {/* Welcome Text */}
+      <View style={styles.content}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../../assets/images/main.png")}
+            style={styles.mainImage}
+            resizeMode="contain"
+          />
+        </View>
+
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Welcome to AURA</Text>
-          <Text style={styles.subtitle}>
-            Your secure health wallet powered by blockchain technology
+          <View style={styles.titleWithLogo}>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.title}>AURA</Text>
+          </View>
+          <Text style={styles.tagline}>
+            Your secure health vault on the blockchain
           </Text>
         </View>
 
-        {/* Google Auth Button */}
         <TouchableOpacity
-          style={[
-            styles.googleButton,
-            isAuthenticating && styles.disabledButton,
-          ]}
-          onPress={handleGoogleAuth}
+          style={[styles.button, isAuthenticating && styles.disabledButton]}
+          onPress={handleSignInWithGoogle}
           disabled={isAuthenticating}
         >
-          <Text style={styles.googleIcon}>🔐</Text>
-          <Text style={styles.googleButtonText}>
-            {isAuthenticating ? "Authenticating..." : "Continue with Google"}
+          <Image
+            source={require("../../assets/images/google-icon.png")}
+            style={styles.googleIcon}
+          />
+          <Text style={styles.buttonText}>
+            {isAuthenticating ? "Connecting..." : "Sign in with Google"}
           </Text>
         </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Get Started Button */}
-        <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
-          <Text style={styles.buttonText}>Get Started</Text>
-          <Text style={styles.arrow}>→</Text>
-        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f23",
+  },
+  mainImage: {
+    width: width * 0.7,
+    height: width * 0.7,
+    marginBottom: 20,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
   },
   content: {
     flex: 1,
@@ -148,124 +179,69 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 40,
   },
-  imageContainer: {
-    marginBottom: 60,
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#1a1a2e",
-    justifyContent: "center",
+  logoContainer: {
+    marginBottom: 40,
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#0f3460",
-    shadowColor: "#0f3460",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  imageText: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  imageLabel: {
-    fontSize: 12,
-    color: "#8892b0",
-    fontWeight: "600",
   },
   textContainer: {
     alignItems: "center",
     marginBottom: 60,
   },
+  titleWithLogo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    
+  },
   title: {
-    fontSize: 36,
+    fontSize: 48,
     fontWeight: "bold",
     color: "#ffffff",
-    marginBottom: 16,
     textAlign: "center",
+    fontFamily: "SpaceGrotesk_Bold",
   },
-  subtitle: {
-    fontSize: 18,
-    color: "#8892b0",
+  tagline: {
+    fontSize: 25,
+    color: "#929292ff",
     textAlign: "center",
     lineHeight: 26,
     maxWidth: 300,
-  },
-  googleButton: {
-    backgroundColor: "#ffffff",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  googleIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  googleButtonText: {
-    color: "#333333",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: "#cccccc",
-  },
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    width: "100%",
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#16213e",
-  },
-  dividerText: {
-    color: "#8892b0",
-    fontSize: 14,
-    marginHorizontal: 16,
+    fontFamily: "EBGaramond",
   },
   button: {
-    backgroundColor: "#0f3460",
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 50,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#0f3460",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  disabledButton: {
+    backgroundColor: "#d3d3d3",
+  },
+  circle: {
+    position: "absolute",
+    width: height * 1.5,
+    height: height * 1.5,
+    borderRadius: height * 0.75,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    top: -height * 0.75,
+    left: -height * 0.25,
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
   },
   buttonText: {
-    color: "#ffffff",
-    fontSize: 18,
+    color: "#2c3e50", // Changed to a dark color for better contrast
+    fontSize: 16,
     fontWeight: "bold",
-    marginRight: 8,
-  },
-  arrow: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -11,59 +11,96 @@ import {
   Image,
   Modal,
   ActivityIndicator,
-} from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
-import QRCode from 'react-native-qrcode-svg';
-import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '../../../providers/AuthProvider';
+} from "react-native";
+import { Redirect, useRouter } from "expo-router";
+import QRCode from "react-native-qrcode-svg";
+import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@providers/AuthProvider";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
 
 // Simulated Web3 Backend
 const mockIPFSStorage: { [key: string]: any } = {};
 
 // Document Types for better UX
 const DOCUMENT_TYPES = [
-  { id: 'blood_test', label: 'Blood Test Results', icon: '🩸' },
-  { id: 'xray', label: 'X-Ray Report', icon: '📷' },
-  { id: 'prescription', label: 'Prescription', icon: '💊' },
-  { id: 'lab_report', label: 'Lab Report', icon: '🔬' },
-  { id: 'medical_certificate', label: 'Medical Certificate', icon: '📋' },
-  { id: 'vaccination', label: 'Vaccination Record', icon: '💉' },
-  { id: 'surgery', label: 'Surgery Report', icon: '🏥' },
-  { id: 'other', label: 'Other Document', icon: '📄' },
+  { id: "blood_test", label: "Blood Test Results" },
+  { id: "xray", label: "X-Ray Report" },
+  { id: "prescription", label: "Prescription" },
+  { id: "lab_report", label: "Lab Report" },
+  { id: "medical_certificate", label: "Medical Certificate" },
+  { id: "vaccination", label: "Vaccination Record" },
+  { id: "surgery", label: "Surgery Report" },
+  { id: "other", label: "Other Document" },
 ];
 
 // Mock functions
 const uploadToIPFS = async (data: any): Promise<string> => {
-  const hash = 'Qm' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const hash =
+    "Qm" +
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15);
   mockIPFSStorage[hash] = data;
-  console.log('Uploaded to IPFS:', hash);
+  console.log("Uploaded to IPFS:", hash);
   return hash;
 };
 
-const logHashToBlockchain = async (hash: string, recordType: string): Promise<void> => {
-  console.log('Logged to blockchain:', { hash, recordType, timestamp: new Date().toISOString() });
-  await new Promise(resolve => setTimeout(resolve, 1000));
+const logHashToBlockchain = async (
+  hash: string,
+  recordType: string
+): Promise<void> => {
+  console.log("Logged to blockchain:", {
+    hash,
+    recordType,
+    timestamp: new Date().toISOString(),
+  });
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 };
 
 export default function PatientDashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
-  const [records, setRecords] = useState<Array<{ id: string; type: string; data: string; hash: string; imageUri?: string }>>([]);
-  const [recordType, setRecordType] = useState('');
-  const [recordData, setRecordData] = useState('');
-  const [sharedRecord, setSharedRecord] = useState<{ type: string; data: string; hash: string } | null>(null);
+  const [records, setRecords] = useState<
+    Array<{
+      id: string;
+      type: string;
+      data: string;
+      hash: string;
+      imageUri?: string;
+    }>
+  >([]);
+  const [recordType, setRecordType] = useState("");
+  const [recordData, setRecordData] = useState("");
+  const [sharedRecord, setSharedRecord] = useState<{
+    type: string;
+    data: string;
+    hash: string;
+  } | null>(null);
 
   // Document scanning states
   const [showDocumentScanner, setShowDocumentScanner] = useState(false);
-  const [selectedDocumentType, setSelectedDocumentType] = useState('');
+  const [selectedDocumentType, setSelectedDocumentType] = useState("");
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
-        <Text style={{ color: '#ffffff', marginTop: 10 }}>Loading...</Text>
+        <ActivityIndicator size="large" color="#bdc3c7" />
+        <Text style={{ color: "#ffffff", marginTop: 10 }}>Loading...</Text>
       </View>
     );
   }
@@ -74,7 +111,7 @@ export default function PatientDashboard() {
 
   const handleSaveRecord = async () => {
     if (!recordType.trim() || !recordData.trim()) {
-      Alert.alert('Error', 'Please fill in both record type and data');
+      Alert.alert("Error", "Please fill in both record type and data");
       return;
     }
 
@@ -95,26 +132,34 @@ export default function PatientDashboard() {
         hash: hash,
       };
 
-      setRecords(prev => [...prev, newRecord]);
-      setRecordType('');
-      setRecordData('');
-      Alert.alert('Success', 'Record saved to health vault!');
+      setRecords((prev) => [...prev, newRecord]);
+      setRecordType("");
+      setRecordData("");
+      Alert.alert("Success", "Record saved to health vault!");
     } catch (error) {
-      Alert.alert('Error', 'Failed to save record');
-      console.error('Save record error:', error);
+      Alert.alert("Error", "Failed to save record");
+      console.error("Save record error:", error);
     }
   };
 
-  const handleShareRecord = (record: { type: string; data: string; hash: string }) => {
+  const handleShareRecord = (record: {
+    type: string;
+    data: string;
+    hash: string;
+  }) => {
     setSharedRecord(record);
   };
 
   const handleScanDocument = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Camera roll permission is required to scan documents');
+        Alert.alert(
+          "Permission Required",
+          "Camera roll permission is required to scan documents"
+        );
         return;
       }
 
@@ -130,8 +175,8 @@ export default function PatientDashboard() {
         setShowDocumentScanner(true);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to access camera roll');
-      console.error('Camera error:', error);
+      Alert.alert("Error", "Failed to access camera roll");
+      console.error("Camera error:", error);
     }
   };
 
@@ -141,7 +186,7 @@ export default function PatientDashboard() {
 
   const handleUploadDocument = async () => {
     if (!selectedDocumentType || !scannedImage) {
-      Alert.alert('Error', 'Please select document type and scan an image');
+      Alert.alert("Error", "Please select document type and scan an image");
       return;
     }
 
@@ -150,7 +195,9 @@ export default function PatientDashboard() {
     try {
       const documentData = {
         type: selectedDocumentType,
-        data: `Scanned ${DOCUMENT_TYPES.find(t => t.id === selectedDocumentType)?.label}`,
+        data: `Scanned ${
+          DOCUMENT_TYPES.find((t) => t.id === selectedDocumentType)?.label
+        }`,
         imageUri: scannedImage,
         timestamp: new Date().toISOString(),
       };
@@ -166,27 +213,34 @@ export default function PatientDashboard() {
         imageUri: scannedImage,
       };
 
-      setRecords(prev => [...prev, newRecord]);
+      setRecords((prev) => [...prev, newRecord]);
 
       setIsUploading(false);
       setShowDocumentScanner(false);
       setScannedImage(null);
-      setSelectedDocumentType('');
-      Alert.alert('Success', 'Document scanned and uploaded successfully!');
-
+      setSelectedDocumentType("");
+      Alert.alert("Success", "Document scanned and uploaded successfully!");
     } catch (error) {
       setIsUploading(false);
-      Alert.alert('Error', 'Failed to upload document');
-      console.error('Upload error:', error);
+      Alert.alert("Error", "Failed to upload document");
+      console.error("Upload error:", error);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Text style={styles.welcomeText}>Welcome, {user?.name || 'Patient'}!</Text>
+          <Text style={styles.welcomeText}>
+            Welcome, {user?.name || "Patient"}!
+          </Text>
           <Text style={styles.roleText}>Patient Dashboard</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
@@ -197,26 +251,31 @@ export default function PatientDashboard() {
       <ScrollView style={styles.content}>
         {/* Document Scanner Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📷 Scan Documents</Text>
+          <Text style={styles.sectionTitle}>Scan Documents</Text>
           <Text style={styles.description}>
             Scan medical documents, test results, prescriptions, and more
           </Text>
-          <TouchableOpacity style={styles.scanButton} onPress={handleScanDocument}>
-            <Text style={styles.scanButtonText}>📷 Scan Document</Text>
+          <TouchableOpacity
+            style={styles.scanButton}
+            onPress={handleScanDocument}
+          >
+            <Text style={styles.scanButtonText}>Scan Document</Text>
           </TouchableOpacity>
         </View>
 
         {/* Medicine Scanner Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💊 Medicine Scanner</Text>
+          <Text style={styles.sectionTitle}>Medicine Scanner</Text>
           <Text style={styles.description}>
             Identify medicines by taking a photo of the medicine packet
           </Text>
-          <TouchableOpacity 
-            style={[styles.scanButton, { backgroundColor: '#4CAF50' }]} 
-            onPress={() => router.push("/(app)/(patient)/medicine-scanner" as any)}
+          <TouchableOpacity
+            style={[styles.scanButton, { backgroundColor: "#85d773" }]}
+            onPress={() =>
+              router.push("/(app)/(patient)/medicine-scanner" as any)
+            }
           >
-            <Text style={styles.scanButtonText}>💊 Scan Medicine</Text>
+            <Text style={styles.scanButtonText}>Scan Medicine</Text>
           </TouchableOpacity>
         </View>
 
@@ -264,18 +323,18 @@ export default function PatientDashboard() {
 
         {/* Add New Record Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>✏️ Add New Record</Text>
+          <Text style={styles.sectionTitle}>Add New Record</Text>
           <TextInput
             style={styles.input}
             placeholder="Record Type (e.g., Blood Test, X-Ray)"
-            placeholderTextColor="#666"
+            placeholderTextColor="#bdc3c7"
             value={recordType}
             onChangeText={setRecordType}
           />
           <TextInput
             style={styles.textArea}
             placeholder="Record Data"
-            placeholderTextColor="#666"
+            placeholderTextColor="#bdc3c7"
             value={recordData}
             onChangeText={setRecordData}
             multiline
@@ -288,18 +347,25 @@ export default function PatientDashboard() {
 
         {/* Records List */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Your Health Records</Text>
+          <Text style={styles.sectionTitle}>Your Health Records</Text>
           {records.length === 0 ? (
-            <Text style={styles.emptyText}>No records yet. Add your first health record above.</Text>
+            <Text style={styles.emptyText}>
+              No records yet. Add your first health record above.
+            </Text>
           ) : (
             records.map((record) => (
               <View key={record.id} style={styles.recordCard}>
                 <Text style={styles.recordType}>{record.type}</Text>
                 <Text style={styles.recordData}>{record.data}</Text>
                 {record.imageUri && (
-                  <Image source={{ uri: record.imageUri }} style={styles.recordImage} />
+                  <Image
+                    source={{ uri: record.imageUri }}
+                    style={styles.recordImage}
+                  />
                 )}
-                <Text style={styles.recordHash}>Hash: {record.hash.substring(0, 20)}...</Text>
+                <Text style={styles.recordHash}>
+                  Hash: {record.hash.substring(0, 20)}...
+                </Text>
                 <TouchableOpacity
                   style={styles.shareButton}
                   onPress={() => handleShareRecord(record)}
@@ -326,7 +392,9 @@ export default function PatientDashboard() {
                 color="#000"
                 backgroundColor="#fff"
               />
-              <Text style={styles.qrText}>Scan this QR code to access the record</Text>
+              <Text style={styles.qrText}>
+                Scan this QR code to access the record
+              </Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setSharedRecord(null)}
@@ -345,6 +413,12 @@ export default function PatientDashboard() {
         presentationStyle="pageSheet"
       >
         <SafeAreaView style={styles.modalContainer}>
+          <LinearGradient
+            colors={["#2c3e50", "#bdc3c7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.background}
+          />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Scan Document</Text>
             <TouchableOpacity
@@ -358,27 +432,35 @@ export default function PatientDashboard() {
           <ScrollView style={styles.modalContent}>
             {scannedImage && (
               <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: scannedImage }} style={styles.imagePreview} />
+                <Image
+                  source={{ uri: scannedImage }}
+                  style={styles.imagePreview}
+                />
               </View>
             )}
 
             <View style={styles.documentTypeSection}>
-              <Text style={styles.documentTypeTitle}>Select Document Type:</Text>
+              <Text style={styles.documentTypeTitle}>
+                Select Document Type:
+              </Text>
               <View style={styles.documentTypeGrid}>
                 {DOCUMENT_TYPES.map((docType) => (
                   <TouchableOpacity
                     key={docType.id}
                     style={[
                       styles.documentTypeButton,
-                      selectedDocumentType === docType.id && styles.selectedDocumentTypeButton
+                      selectedDocumentType === docType.id &&
+                        styles.selectedDocumentTypeButton,
                     ]}
                     onPress={() => handleDocumentTypeSelect(docType.id)}
                   >
-                    <Text style={styles.documentTypeIcon}>{docType.icon}</Text>
-                    <Text style={[
-                      styles.documentTypeLabel,
-                      selectedDocumentType === docType.id && styles.selectedDocumentTypeLabel
-                    ]}>
+                    <Text
+                      style={[
+                        styles.documentTypeLabel,
+                        selectedDocumentType === docType.id &&
+                          styles.selectedDocumentTypeLabel,
+                      ]}
+                    >
                       {docType.label}
                     </Text>
                   </TouchableOpacity>
@@ -389,13 +471,14 @@ export default function PatientDashboard() {
             <TouchableOpacity
               style={[
                 styles.uploadButton,
-                (!selectedDocumentType || !scannedImage || isUploading) && styles.disabledButton
+                (!selectedDocumentType || !scannedImage || isUploading) &&
+                  styles.disabledButton,
               ]}
               onPress={handleUploadDocument}
               disabled={!selectedDocumentType || !scannedImage || isUploading}
             >
               <Text style={styles.uploadButtonText}>
-                {isUploading ? 'Uploading...' : 'Upload Document'}
+                {isUploading ? "Uploading..." : "Upload Document"}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -408,46 +491,62 @@ export default function PatientDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    // Note: The LinearGradient handles the background color for the main screen.
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0f0f23',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#2c3e50", // Use a darker color from the new gradient
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "transparent", // Make header transparent for the gradient
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    marginTop: 50,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   userInfo: {
     flex: 1,
   },
   welcomeText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   roleText: {
     fontSize: 14,
-    color: '#8892b0',
+    color: "#bdc3c7", // Lighter color from the new gradient
+    fontFamily: "SpaceGrotesk_Regular",
   },
   logoutButton: {
-    backgroundColor: '#e53e3e',
+    backgroundColor: "#e74c3c", // A different red for metallic theme
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   logoutButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   content: {
     flex: 1,
@@ -455,235 +554,276 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 30,
+    backgroundColor: "rgba(255, 255, 255, 0.05)", // Semi-transparent for metallic feel
+    borderRadius: 12,
+    padding: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
     marginBottom: 15,
+    fontFamily: "SpaceGrotesk_Bold",
   },
   description: {
     fontSize: 16,
-    color: '#8892b0',
+    color: "#bdc3c7",
     lineHeight: 24,
     marginBottom: 20,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   scanButton: {
-    backgroundColor: '#38a169',
+    backgroundColor: "#ffffff", // Use a bright color for the main buttons
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   scanButtonText: {
-    color: '#ffffff',
+    color: "#2c3e50", // Dark color for contrast
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: "#bdc3c7",
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    color: '#ffffff',
+    color: "#ffffff",
     marginBottom: 15,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   textArea: {
-    backgroundColor: '#16213e',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: "#bdc3c7",
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
-    color: '#ffffff',
+    color: "#ffffff",
     marginBottom: 15,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     minHeight: 100,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   button: {
-    backgroundColor: '#0f3460',
+    backgroundColor: "#ffffff",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   buttonText: {
-    color: '#ffffff',
+    color: "#2c3e50",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   recordCard: {
-    backgroundColor: '#16213e',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     padding: 20,
     borderRadius: 12,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#0f3460',
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   recordType: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
     marginBottom: 8,
+    fontFamily: "SpaceGrotesk_Bold",
   },
   recordData: {
     fontSize: 16,
-    color: '#8892b0',
+    color: "#bdc3c7",
     marginBottom: 8,
     lineHeight: 22,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   recordImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 8,
     marginBottom: 8,
   },
   recordHash: {
     fontSize: 14,
-    color: '#4a5568',
-    fontFamily: 'monospace',
+    color: "#95a5a6",
+    fontFamily: "SpaceGrotesk_Regular",
     marginBottom: 12,
   },
   shareButton: {
-    backgroundColor: '#38a169',
+    backgroundColor: "#2ecc71",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   shareButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   emptyText: {
     fontSize: 16,
-    color: '#8892b0',
-    textAlign: 'center',
-    fontStyle: 'italic',
+    color: "#bdc3c7",
+    textAlign: "center",
+    fontStyle: "italic",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   qrContainer: {
-    alignItems: 'center',
-    backgroundColor: '#16213e',
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     padding: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   qrText: {
     fontSize: 16,
-    color: '#8892b0',
-    textAlign: 'center',
+    color: "#bdc3c7",
+    textAlign: "center",
     marginTop: 15,
     marginBottom: 15,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   closeButton: {
-    backgroundColor: '#e53e3e',
+    backgroundColor: "#e74c3c",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
   closeButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    // Note: The LinearGradient handles the background color here
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "transparent",
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   closeModalButton: {
     padding: 8,
   },
   closeModalButtonText: {
     fontSize: 24,
-    color: '#8892b0',
+    color: "#bdc3c7",
   },
   modalContent: {
     flex: 1,
     padding: 20,
   },
   imagePreviewContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   imagePreview: {
-    width: '100%',
+    width: "100%",
     height: 300,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#0f3460',
+    borderColor: "#bdc3c7",
   },
   documentTypeSection: {
     marginBottom: 30,
   },
   documentTypeTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
+    fontWeight: "bold",
+    color: "#ffffff",
     marginBottom: 15,
+    fontFamily: "SpaceGrotesk_Bold",
   },
   documentTypeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   documentTypeButton: {
-    width: '48%',
-    backgroundColor: '#16213e',
+    width: "48%",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 10,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   selectedDocumentTypeButton: {
-    borderColor: '#0f3460',
-    backgroundColor: '#0f3460',
+    borderColor: "#bdc3c7",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   documentTypeIcon: {
-    fontSize: 24,
-    marginBottom: 8,
+    // This style is now unused since the emojis were removed
   },
   documentTypeLabel: {
     fontSize: 14,
-    color: '#8892b0',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "#bdc3c7",
+    textAlign: "center",
+    fontWeight: "600",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   selectedDocumentTypeLabel: {
-    color: '#ffffff',
+    color: "#ffffff",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   uploadButton: {
-    backgroundColor: '#38a169',
+    backgroundColor: "#2ecc71",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   uploadButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
   disabledButton: {
-    backgroundColor: '#4a5568',
+    backgroundColor: "#95a5a6",
   },
 });
