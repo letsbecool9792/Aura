@@ -281,7 +281,7 @@ export default function PatientDashboard() {
 
         {/* Brain Tumor Detection Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🧠 Brain Tumor Detection</Text>
+          <Text style={styles.sectionTitle}>Brain Tumor Detection</Text>
           <Text style={styles.description}>
             AI-powered tumor segmentation from brain scan images
           </Text>
@@ -289,7 +289,7 @@ export default function PatientDashboard() {
             style={[styles.scanButton, { backgroundColor: '#FF6B6B' }]} 
             onPress={() => router.push("/(app)/(patient)/brain-tumor-detector" as any)}
           >
-            <Text style={styles.scanButtonText}>🧠 Analyze Brain Scan</Text>
+            <Text style={styles.scanButtonText}>Analyze Brain Scan</Text>
           </TouchableOpacity>
         </View>
 
@@ -309,7 +309,7 @@ export default function PatientDashboard() {
 
         {/* Fake Vault Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📱 Share Health Info</Text>
+          <Text style={styles.sectionTitle}>Share Health Info</Text>
           <Text style={styles.description}>
             Quickly share your health information with doctors via QR code scanning
           </Text>
@@ -317,7 +317,7 @@ export default function PatientDashboard() {
             style={[styles.scanButton, { backgroundColor: '#10B981' }]} 
             onPress={() => router.push("/(app)/(patient)/fake-vault" as any)}
           >
-            <Text style={styles.scanButtonText}>📱 Share with Doctor</Text>
+            <Text style={styles.scanButtonText}>Share with Doctor</Text>
           </TouchableOpacity>
         </View>
 

@@ -235,7 +235,7 @@ const FakeVaultScreen = () => {
         >
         {/* Info Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Patient Information</Text>
+          <Text style={styles.sectionTitle}>Patient Information</Text>
           <Text style={styles.description}>
             Fill in your health information below. When ready, tap "Scan Doctor QR Code"
             to open your camera and securely share the data with the doctor.

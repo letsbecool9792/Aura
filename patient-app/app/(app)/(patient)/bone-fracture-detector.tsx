@@ -322,7 +322,7 @@ const BoneFractureDetectorScreen = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* AI Model Info */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>🦴 AI-Powered Fracture Detection</Text>
+          <Text style={styles.infoTitle}>AI-Powered Fracture Detection</Text>
           <Text style={styles.infoDescription}>
             Our application leverages a sophisticated AI model, DANet, pre-trained on the extensive FracAtlas dataset.
             We utilize a curated set of 20 sample X-ray images and their corresponding high-fidelity segmentation masks
@@ -332,7 +332,7 @@ const BoneFractureDetectorScreen = () => {
 
         {/* Image Selection Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📤 Select X-ray Scan</Text>
+          <Text style={styles.sectionTitle}>Select X-ray Scan</Text>
           
           {selectedXray ? (
             <View style={styles.selectedImageContainer}>
@@ -351,11 +351,11 @@ const BoneFractureDetectorScreen = () => {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.selectButton} onPress={() => setShowXraySelector(true)}>
-              <Text style={styles.selectButtonText}>📋 Select X-ray Scan</Text>
+              <Text style={styles.selectButtonText}>Select X-ray Scan</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
-              <Text style={styles.uploadButtonText}>📷 Upload New X-ray</Text>
+              <Text style={styles.uploadButtonText}>Upload New X-ray</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -364,7 +364,7 @@ const BoneFractureDetectorScreen = () => {
         {selectedXray && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {analysisState.phase === 'processing' ? '⚡ Processing X-ray Scan' : '📊 Analysis Results'}
+              {analysisState.phase === 'processing' ? 'Processing X-ray Scan' : 'Analysis Results'}
             </Text>
             
             {analysisState.phase === 'processing' && (
@@ -394,9 +394,9 @@ const BoneFractureDetectorScreen = () => {
 
                 <View style={styles.processingSteps}>
                   <Text style={styles.stepText}>
-                    {analysisState.progress < 25 ? '🔍 Preprocessing X-ray...' :
-                      analysisState.progress < 50 ? '🦴 Detecting bone structures...' :
-                      analysisState.progress < 75 ? '🔍 Analyzing fracture patterns...' :
+                    {analysisState.progress < 25 ? 'Preprocessing X-ray...' :
+                      analysisState.progress < 50 ? 'Detecting bone structures...' :
+                      analysisState.progress < 75 ? 'Analyzing fracture patterns...' :
                       '🎯 Generating fracture segmentation...'}
                   </Text>
                 </View>
@@ -447,7 +447,7 @@ const BoneFractureDetectorScreen = () => {
         {/* Results Section */}
         {analysisResult && analysisState.phase === 'complete' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Analysis Summary</Text>
+            <Text style={styles.sectionTitle}>Analysis Summary</Text>
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryText}>
                 Our DANet model has successfully analyzed the X-ray scan and identified potential fractures with {analysisResult.confidence}% confidence.
@@ -466,7 +466,7 @@ const BoneFractureDetectorScreen = () => {
               disabled={!selectedXray || analysisState.phase === 'processing'}
             >
               <Text style={styles.analyzeButtonText}>
-                {analysisState.phase === 'processing' ? 'Analyzing...' : '🔍 Analyze X-ray'}
+                {analysisState.phase === 'processing' ? 'Analyzing...' : 'Analyze X-ray'}
               </Text>
             </TouchableOpacity>
           </View>

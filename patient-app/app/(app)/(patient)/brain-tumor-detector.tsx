@@ -324,7 +324,7 @@ const BrainTumorDetectorScreen = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* AI Model Info */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>🧠 AI-Powered Brain Tumor Detection</Text>
+          <Text style={styles.infoTitle}>AI-Powered Brain Tumor Detection</Text>
           <Text style={styles.infoDescription}>
             Advanced deep learning model for precise tumor segmentation in brain MRI scans.
             Our AI analyzes brain images to identify and highlight potential tumor regions.
@@ -352,18 +352,18 @@ const BrainTumorDetectorScreen = () => {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.selectButton} onPress={() => setShowScanSelector(true)}>
-              <Text style={styles.selectButtonText}>📋 Select Brain Scan</Text>
+              <Text style={styles.selectButtonText}>Select Brain Scan</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
-              <Text style={styles.uploadButtonText}>📷 Upload New Scan</Text>
+              <Text style={styles.uploadButtonText}>Upload New Scan</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Analysis Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔬 AI Analysis</Text>
+          <Text style={styles.sectionTitle}>AI Analysis</Text>
           
           <TouchableOpacity
             style={[
@@ -381,7 +381,7 @@ const BrainTumorDetectorScreen = () => {
                 </Text>
               </>
             ) : (
-              <Text style={styles.analyzeButtonText}>🚀 Start Analysis</Text>
+              <Text style={styles.analyzeButtonText}>Start Analysis</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -420,9 +420,9 @@ const BrainTumorDetectorScreen = () => {
 
                 <View style={styles.processingSteps}>
                   <Text style={styles.stepText}>
-                    {analysisState.progress < 25 ? '🔍 Preprocessing image...' :
-                      analysisState.progress < 50 ? '🧠 Detecting brain regions...' :
-                      analysisState.progress < 75 ? '🎯 Identifying tumor areas...' :
+                    {analysisState.progress < 25 ? 'Preprocessing image...' :
+                      analysisState.progress < 50 ? 'Detecting brain regions...' :
+                      analysisState.progress < 75 ? 'Identifying tumor areas...' :
                       '✨ Finalizing segmentation...'}
                   </Text>
                 </View>
@@ -473,7 +473,7 @@ const BrainTumorDetectorScreen = () => {
         {/* Results Section */}
         {analysisResult && analysisState.phase === 'complete' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Analysis Summary</Text>
+            <Text style={styles.sectionTitle}>Analysis Summary</Text>
             <Text style={styles.summaryText}>
               The AI model has successfully processed the brain scan and identified potential tumor regions.
               The segmentation highlights areas requiring further medical evaluation.
