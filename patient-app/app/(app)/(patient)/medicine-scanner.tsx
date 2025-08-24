@@ -12,13 +12,10 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
-// IMPORTANT: Replace with your machine's local IP address.
-// On Mac/Linux, run `ifconfig`. On Windows, run `ipconfig`.
-// It is NOT 'localhost' or '127.0.0.1'.
-// For now, let's test with local server first:
-const API_URL = 'http://localhost:8000/api/identify-medicine/';
-// const API_URL = 'https://aura-krw4.onrender.com/api/identify-medicine/';
+// Using the hosted API on Render
+const API_URL = 'https://aura-krw4.onrender.com/api/identify-medicine/';
 
 interface SelectedImage {
   uri: string;
@@ -45,6 +42,24 @@ const MedicineScannerScreen = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Test connectivity function
+  const testConnectivity = async () => {
+    try {
+      console.log('Testing connectivity to:', API_URL.replace('/identify-medicine/', '/health/'));
+      const response = await fetch(API_URL.replace('/identify-medicine/', '/health/'), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      console.log('Health check response:', response.status);
+      return response.ok;
+    } catch (error) {
+      console.error('Connectivity test failed:', error);
+      return false;
+    }
+  };
+
   const handleImageSelection = async (type: 'gallery' | 'camera') => {
     try {
       // Request permissions
@@ -58,7 +73,7 @@ const MedicineScannerScreen = () => {
       let result;
       if (type === 'gallery') {
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [4, 3],
           quality: 0.8,
@@ -71,7 +86,7 @@ const MedicineScannerScreen = () => {
         }
         
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [4, 3],
           quality: 0.8,
@@ -93,41 +108,68 @@ const MedicineScannerScreen = () => {
   const createFormData = (imageAsset: ImagePicker.ImagePickerAsset): FormData => {
     const data = new FormData();
     
+    console.log('Original image asset:', imageAsset);
+    
     // Get file extension from URI or default to jpg
     const uriParts = imageAsset.uri.split('.');
-    const fileType = uriParts[uriParts.length - 1];
+    const fileType = uriParts[uriParts.length - 1] || 'jpg';
     
-    data.append('image', {
+    // For Expo, we need to use the proper format
+    const fileObject = {
       uri: imageAsset.uri,
-      name: `medicine-image.${fileType}`,
       type: `image/${fileType}`,
-    } as any);
+      name: `medicine-image.${fileType}`,
+    };
+    
+    console.log('File object for FormData:', fileObject);
+    
+    // Expo/React Native specific way to append file
+    data.append('image', fileObject as any);
+    
+    console.log('FormData created successfully');
     
     return data;
   };
 
   const uploadImage = async (imageAsset: ImagePicker.ImagePickerAsset) => {
     setIsLoading(true);
+    
+    console.log('Starting upload with image:', imageAsset.uri);
+    console.log('API URL:', API_URL);
+    
     try {
-      const formData = createFormData(imageAsset);
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: formData,
-        // Don't set Content-Type header for FormData - let the browser set it
+      console.log('Using FileSystem.uploadAsync for Expo compatibility...');
+      
+      // Create a promise that will timeout after 3 minutes
+      const uploadPromise = FileSystem.uploadAsync(API_URL, imageAsset.uri, {
+        fieldName: 'image',
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        headers: {
+          'Accept': 'application/json',
+        },
+        sessionType: FileSystem.FileSystemSessionType.BACKGROUND,
       });
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request took too long (3 minutes). The server might be busy processing your image.')), 180000);
+      });
+
+      // Race between upload and timeout
+      const response = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
+      console.log('Upload completed. Response received:', response.status);
 
       // Log the response for debugging
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
+      console.log('Response body:', response.body);
 
-      if (!response.ok) {
-        // If response is not OK, get the text to see what error we're getting
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Server error: ${response.status} - ${errorText.substring(0, 200)}`);
+      if (response.status < 200 || response.status >= 300) {
+        console.error('Error response:', response.body);
+        throw new Error(`Server error: ${response.status} - ${response.body?.substring(0, 200)}`);
       }
 
-      const responseText = await response.text();
+      const responseText = response.body;
       console.log('Response text:', responseText);
 
       // Try to parse as JSON
@@ -136,14 +178,36 @@ const MedicineScannerScreen = () => {
         jsonResponse = JSON.parse(responseText);
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        console.error('Response that failed to parse:', responseText.substring(0, 500));
+        console.error('Response that failed to parse:', responseText?.substring(0, 500));
         throw new Error('Server returned invalid JSON. Check server logs.');
       }
 
       setAnalysisResult(jsonResponse);
     } catch (error) {
-      console.error('Upload Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('=== UPLOAD ERROR DETAILS ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', (error as any)?.name);
+      console.error('Error message:', (error as any)?.message);
+      console.error('Error stack:', (error as any)?.stack);
+      console.error('Full error object:', error);
+      console.error('=== END ERROR DETAILS ===');
+      
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timeout. The server is taking too long to respond.';
+        } else if (error.message.includes('Network request failed')) {
+          errorMessage = 'Network connection failed. Please check your internet connection and server availability.';
+        } else if (error.message.includes('TypeError')) {
+          errorMessage = 'Connection error. Please check if the server is accessible.';
+        } else if (error.message.includes('timeout') || error.message.includes('took too long')) {
+          errorMessage = 'The medicine analysis is taking longer than expected. This might happen if:\n\n• The server is processing a complex image\n• The Gemini API is slow to respond\n• The server is under heavy load\n\nPlease try again with a clearer image or try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       Alert.alert('Analysis Failed', errorMessage);
       setAnalysisResult(null);
     } finally {

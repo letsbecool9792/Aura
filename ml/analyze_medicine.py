@@ -9,6 +9,8 @@ from PIL import Image
 import google.generativeai as genai
 from thefuzz import process, fuzz
 from dotenv import load_dotenv
+import signal
+import time
 
 # IMPORTANT: The Django backend will execute this script from the `/backend/` directory.
 # Therefore, we need to construct the paths relative to that location.
@@ -56,9 +58,21 @@ def run_analysis(image_path):
 
     try:
         original_image = Image.open(image_path).convert("RGB")
+        
+        # Resize image to reduce processing time while maintaining quality
+        max_size = (1024, 1024)
+        original_image.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
         prompt = """You are an expert pharmacy assistant. Analyze the image of the medicine packaging. Extract the following information and return it as a clean JSON object: "brand_name", "composition", "manufacturer". If a field is not visible, return "N/A". Do not include any text outside the JSON."""
         
+        # Add timeout for Gemini API call
+        start_time = time.time()
         response = model.generate_content([prompt, original_image])
+        elapsed_time = time.time() - start_time
+        
+        if elapsed_time > 120:  # If taking more than 2 minutes
+            return json.dumps({"status": "error", "message": "Gemini API response took too long"})
+        
         clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
         gemini_data = json.loads(clean_json_str)
 
