@@ -12,7 +12,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../providers/AuthProvider';
@@ -47,6 +47,7 @@ const logHashToBlockchain = async (hash: string, recordType: string): Promise<vo
 
 export default function PatientDashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const router = useRouter();
   const [records, setRecords] = useState<Array<{ id: string; type: string; data: string; hash: string; imageUri?: string }>>([]);
   const [recordType, setRecordType] = useState('');
   const [recordData, setRecordData] = useState('');
@@ -202,6 +203,20 @@ export default function PatientDashboard() {
           </Text>
           <TouchableOpacity style={styles.scanButton} onPress={handleScanDocument}>
             <Text style={styles.scanButtonText}>📷 Scan Document</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Medicine Scanner Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>💊 Medicine Scanner</Text>
+          <Text style={styles.description}>
+            Identify medicines by taking a photo of the medicine packet
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#4CAF50' }]} 
+            onPress={() => router.push("/(app)/(patient)/medicine-scanner" as any)}
+          >
+            <Text style={styles.scanButtonText}>💊 Scan Medicine</Text>
           </TouchableOpacity>
         </View>
 

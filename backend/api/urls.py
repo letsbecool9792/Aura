@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/auth/verify/', views.verify_token, name='verify_token'),
     path('api/auth/success/', views.auth_success, name='auth_success'),
     path('api/auth/logout/', views.auth_logout, name='auth_logout'),
+    path('api/identify-medicine/', views.identify_medicine_view, name='identify_medicine'),
 ]

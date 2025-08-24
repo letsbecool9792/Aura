@@ -9,6 +9,7 @@
     "big-integer": "^1.6.52",
     "buffer": "^6.0.3",
     "react-native-dotenv": "^3.4.11",
-    "react-native-get-random-values": "^1.11.0"
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-image-picker": "^8.2.1"
   }
 }

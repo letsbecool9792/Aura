@@ -12,6 +12,13 @@ from rest_framework import status
 import logging
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import subprocess
+import json
+import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -322,3 +329,45 @@ def auth_logout(request):
         'success': True,
         'message': 'Logged out successfully'
     })
+
+@csrf_exempt # For development only. Use token authentication for production.
+def identify_medicine_view(request):
+    if request.method != 'POST' or not request.FILES.get('image'):
+        return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+    image_file = request.FILES['image']
+    
+    # Save the uploaded file to a temporary location
+    temp_path = default_storage.save(f'tmp/{image_file.name}', ContentFile(image_file.read()))
+    uploaded_file_path = os.path.join(settings.MEDIA_ROOT, temp_path)
+
+    try:
+        # Define paths for the subprocess
+        # Assumes the 'ml' folder is at the same level as the 'backend' folder
+        project_root = settings.BASE_DIR.parent
+        script_path = os.path.join(project_root, 'ml', 'analyze_medicine.py')
+        
+        # Use sys.executable to ensure we use the same Python interpreter
+        # that is running Django
+        python_executable = sys.executable
+
+        # Execute the script
+        result = subprocess.run(
+            [python_executable, script_path, uploaded_file_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        response_data = json.loads(result.stdout)
+        
+    except subprocess.CalledProcessError as e:
+        # Error from within the Python script
+        error_details = e.stderr or result.stdout
+        response_data = {'status': 'error', 'message': 'Analysis script failed', 'details': error_details}
+    except Exception as e:
+        response_data = {'status': 'error', 'message': str(e)}
+    finally:
+        # Clean up the temporary file
+        default_storage.delete(temp_path)
+
+    return JsonResponse(response_data)

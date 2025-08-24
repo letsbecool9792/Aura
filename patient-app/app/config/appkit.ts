@@ -1,6 +1,6 @@
 import { defaultConfig } from "@reown/appkit-ethers-react-native";
 
-export const projectId = "YOUR_PROJECT_ID";
+export const projectId = "980a2d452ad0cacb4a3eba44d58d2e75";
 
 export const metadata = {
   name: "Aura Patient App",

@@ -17,6 +17,7 @@ export default function PatientLayout() {
       }}
     >
       <Stack.Screen name="patient-dashboard" />
+      <Stack.Screen name="medicine-scanner" options={{ title: "Medicine Scanner" }} />
     </Stack>
   );
 }
