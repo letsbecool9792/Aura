@@ -16,7 +16,9 @@ import * as ImagePicker from 'expo-image-picker';
 // IMPORTANT: Replace with your machine's local IP address.
 // On Mac/Linux, run `ifconfig`. On Windows, run `ipconfig`.
 // It is NOT 'localhost' or '127.0.0.1'.
-const API_URL = 'http://192.168.1.10:8000/api/identify-medicine/';
+// For now, let's test with local server first:
+const API_URL = 'http://localhost:8000/api/identify-medicine/';
+// const API_URL = 'https://aura-krw4.onrender.com/api/identify-medicine/';
 
 interface SelectedImage {
   uri: string;
@@ -111,18 +113,34 @@ const MedicineScannerScreen = () => {
       const response = await fetch(API_URL, {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        // Don't set Content-Type header for FormData - let the browser set it
       });
 
-      const jsonResponse: AnalysisResult = await response.json();
+      // Log the response for debugging
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
 
-      if (response.ok) {
-        setAnalysisResult(jsonResponse);
-      } else {
-        throw new Error(jsonResponse.message || 'An unknown error occurred.');
+      if (!response.ok) {
+        // If response is not OK, get the text to see what error we're getting
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText.substring(0, 200)}`);
       }
+
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      // Try to parse as JSON
+      let jsonResponse: AnalysisResult;
+      try {
+        jsonResponse = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.error('Response that failed to parse:', responseText.substring(0, 500));
+        throw new Error('Server returned invalid JSON. Check server logs.');
+      }
+
+      setAnalysisResult(jsonResponse);
     } catch (error) {
       console.error('Upload Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
