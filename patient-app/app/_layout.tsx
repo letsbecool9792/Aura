@@ -1,29 +1,32 @@
-import "@ethersproject/shims";
-import { install } from "react-native-quick-crypto";
-global.Buffer = require("buffer").Buffer;
-
-install();
-
-// Needed so that 'stream-http' chooses the right default protocol.
-(global as any).location = {
-  protocol: "file:",
-};
-
-// Mock process for node polyfills
-(global as any).process = {
-  ...global.process,
-  version: "v16.0.0",
-  browser: true,
-};
-
-import React from "react";
 import { Stack } from "expo-router";
-import { AuthProvider } from "./providers/AuthProvider";
+import { AuthProvider } from "../providers/AuthProvider";
 
-export default function App() {
+export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+          contentStyle: { backgroundColor: "#0f0f23" },
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen
+          name="(auth)"
+          options={{
+            animation: "fade",
+            animationDuration: 200,
+          }}
+        />
+        <Stack.Screen
+          name="(app)"
+          options={{
+            animation: "fade",
+            animationDuration: 200,
+          }}
+        />
+      </Stack>
     </AuthProvider>
   );
 }

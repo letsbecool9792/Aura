@@ -1,23 +1,15 @@
-const { getDefaultConfig } = require('@expo/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
-const defaultConfig = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
-module.exports = {
-  ...defaultConfig,
-  resolver: {
-    ...defaultConfig.resolver,
-    extraNodeModules: {
-      ...defaultConfig.resolver.extraNodeModules,
-      assert: false,
-      http: false,
-      https: false,
-      os: false,
-      url: false,
-      zlib: false,
-      path: false,
-      crypto: "crypto-browserify",
-      stream: "readable-stream",
-    },
-    sourceExts: [...defaultConfig.resolver.sourceExts, 'svg'],
-  },
+// This is the important part to add
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  'dayjs/plugin/relativeTime': path.resolve(
+    __dirname,
+    './node_modules/dayjs/plugin/relativeTime.js'
+  ),
 };
+
+module.exports = config;

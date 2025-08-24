@@ -1,28 +1,21 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Redirect, router, useRootNavigationState } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Redirect, router, useRootNavigationState } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 
 // Define the shape of our authentication context
-interface User {
-  role: 'patient' | 'doctor' | null;
-  name: string | null;
-  walletAddress: string | null;
-  token?: string | null;
-  email?: string | null;
-  picture?: string | null;
-}
-
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (userData: { 
-    role: 'patient' | 'doctor'; 
-    name: string; 
-    walletAddress: string; 
-    token?: string;
-    email?: string;
-    picture?: string;
+  user: {
+    role: "patient" | "doctor" | null;
+    name: string | null;
+    walletAddress: string | null;
+  } | null;
+  userRole: "patient" | "doctor" | null;
+  login: (userData: {
+    role: "patient" | "doctor";
+    name: string;
+    walletAddress: string;
   }) => void;
   logout: () => void;
   isLoading: boolean;
@@ -32,10 +25,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // A key for storing the session token in secure storage
-const SESSION_KEY = 'user_session';
+const SESSION_KEY = "user_session";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+function AuthProviderComponent({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<{
+    role: "patient" | "doctor" | null;
+    name: string | null;
+    walletAddress: string | null;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigationState = useRootNavigationState();
 
@@ -49,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(JSON.parse(session));
         }
       } catch (e) {
-        console.error('Failed to load session:', e);
+        console.error("Failed to load session:", e);
       } finally {
         setIsLoading(false);
       }
@@ -58,23 +55,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // The login function for the app
-  const login = async (userData: { 
-    role: 'patient' | 'doctor'; 
-    name: string; 
-    walletAddress: string; 
-    token?: string;
-    email?: string;
-    picture?: string;
+  const login = async (userData: {
+    role: "patient" | "doctor";
+    name: string;
+    walletAddress: string;
   }) => {
     try {
       // In a real app, this would be a real token from a login service
       const sessionToken = JSON.stringify(userData);
       await SecureStore.setItemAsync(SESSION_KEY, sessionToken);
       setUser(userData);
-      console.log('Login successful:', userData);
-      router.replace('/(app)/(patient)/finder'); // Navigate to the main app after login
+      console.log("Login successful:", userData);
+      router.replace("/(app)/(patient)/patient-dashboard"); // Navigate to the main app after login
     } catch (e) {
-      console.error('Failed to log in:', e);
+      console.error("Failed to log in:", e);
     }
   };
 
@@ -83,10 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await SecureStore.deleteItemAsync(SESSION_KEY);
       setUser(null);
-      console.log('Logout successful');
-      router.replace('/(auth)/welcome'); // Navigate back to the auth flow
+      console.log("Logout successful");
+      router.replace("/(auth)/welcome"); // Navigate back to the auth flow
     } catch (e) {
-      console.error('Failed to log out:', e);
+      console.error("Failed to log out:", e);
     }
   };
 
@@ -94,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     isAuthenticated: !!user,
     user,
+    userRole: user?.role || null,
     login,
     logout,
     isLoading,
@@ -105,13 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
 // Custom hook to use the authentication context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -119,12 +114,16 @@ export const useAuth = () => {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a202c',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1a202c",
   },
   loadingText: {
     marginTop: 10,
-    color: '#CBD5E0',
+    color: "#CBD5E0",
   },
 });
+
+// Export the component as both default and named export
+export const AuthProvider = AuthProviderComponent;
+export default AuthProviderComponent;

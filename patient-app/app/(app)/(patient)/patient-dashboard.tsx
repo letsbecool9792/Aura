@@ -10,10 +10,12 @@ import {
   StyleSheet,
   Image,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
+import { Redirect } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '../../providers/AuthProvider';
+import { useAuth } from '../../../providers/AuthProvider';
 
 // Simulated Web3 Backend
 const mockIPFSStorage: { [key: string]: any } = {};
@@ -44,17 +46,30 @@ const logHashToBlockchain = async (hash: string, recordType: string): Promise<vo
 };
 
 export default function PatientDashboard() {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [records, setRecords] = useState<Array<{ id: string; type: string; data: string; hash: string; imageUri?: string }>>([]);
   const [recordType, setRecordType] = useState('');
   const [recordData, setRecordData] = useState('');
   const [sharedRecord, setSharedRecord] = useState<{ type: string; data: string; hash: string } | null>(null);
-  
+
   // Document scanning states
   const [showDocumentScanner, setShowDocumentScanner] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState('');
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+        <Text style={{ color: '#ffffff', marginTop: 10 }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
 
   const handleSaveRecord = async () => {
     if (!recordType.trim() || !recordData.trim()) {
@@ -96,7 +111,7 @@ export default function PatientDashboard() {
   const handleScanDocument = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
         Alert.alert('Permission Required', 'Camera roll permission is required to scan documents');
         return;
@@ -151,7 +166,7 @@ export default function PatientDashboard() {
       };
 
       setRecords(prev => [...prev, newRecord]);
-      
+
       setIsUploading(false);
       setShowDocumentScanner(false);
       setScannedImage(null);
@@ -336,6 +351,12 @@ export default function PatientDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0f0f23',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#0f0f23',
   },
   header: {
