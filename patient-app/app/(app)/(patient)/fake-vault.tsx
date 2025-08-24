@@ -11,9 +11,12 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 
 interface PatientData {
   name: string;
@@ -41,6 +44,11 @@ const FakeVaultScreen = () => {
     allergies: '',
     emergencyContact: '',
     additionalNotes: '',
+  });
+
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
   });
 
   useEffect(() => {
@@ -86,7 +94,7 @@ const FakeVaultScreen = () => {
     try {
       const url = new URL(data);
       const pathParts = url.pathname.split('/');
-      const sessionId = pathParts[pathParts.length - 2]; // Get session ID from URL
+      const sessionId = pathParts[pathParts.length - 2];
       
       if (!sessionId) {
         Alert.alert('Error', 'Invalid QR code format');
@@ -103,7 +111,6 @@ const FakeVaultScreen = () => {
     setIsUploading(true);
     
     try {
-      // Use deployed backend URL
       const localUrl = `https://aura-krw4.onrender.com/api/vault/upload/${sessionId}/`;
       
       const response = await fetch(localUrl, {
@@ -125,7 +132,6 @@ const FakeVaultScreen = () => {
             {
               text: 'OK',
               onPress: () => {
-                // Clear form after successful upload
                 setPatientData({
                   name: '',
                   age: '',
@@ -166,29 +172,49 @@ const FakeVaultScreen = () => {
       return;
     }
 
-    // Open camera to scan doctor's QR code
     setShowScanner(true);
   };
 
-  if (hasPermission === null) {
+  if (!fontsLoaded || hasPermission === null) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Requesting camera permission...</Text>
-      </SafeAreaView>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#bdc3c7" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   if (hasPermission === false) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>No access to camera</Text>
-      </SafeAreaView>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>No access to camera</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -201,8 +227,8 @@ const FakeVaultScreen = () => {
           <Text style={styles.headerTitle}>Share Health Info</Text>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
@@ -211,8 +237,8 @@ const FakeVaultScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📋 Patient Information</Text>
           <Text style={styles.description}>
-            Fill in your health information below. When ready, tap "Scan Doctor QR Code" 
-            to open your camera and scan the QR code displayed on the doctor's screen.
+            Fill in your health information below. When ready, tap "Scan Doctor QR Code"
+            to open your camera and securely share the data with the doctor.
           </Text>
         </View>
 
@@ -222,7 +248,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your full name"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.name}
             onChangeText={(value) => handleInputChange('name', value)}
           />
@@ -231,7 +257,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Enter your age"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.age}
             onChangeText={(value) => handleInputChange('age', value)}
             keyboardType="numeric"
@@ -241,7 +267,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Describe your current symptoms"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.symptoms}
             onChangeText={(value) => handleInputChange('symptoms', value)}
             multiline={true}
@@ -252,7 +278,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Previous medical conditions, surgeries, etc."
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.medicalHistory}
             onChangeText={(value) => handleInputChange('medicalHistory', value)}
             multiline={true}
@@ -263,7 +289,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="List current medications and dosages"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.currentMedications}
             onChangeText={(value) => handleInputChange('currentMedications', value)}
             multiline={true}
@@ -274,7 +300,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Known allergies (medications, food, etc.)"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.allergies}
             onChangeText={(value) => handleInputChange('allergies', value)}
           />
@@ -283,7 +309,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={styles.input}
             placeholder="Emergency contact name and phone"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.emergencyContact}
             onChangeText={(value) => handleInputChange('emergencyContact', value)}
           />
@@ -292,7 +318,7 @@ const FakeVaultScreen = () => {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Any additional information you'd like to share"
-            placeholderTextColor="#8892b0"
+            placeholderTextColor="#bdc3c7"
             value={patientData.additionalNotes}
             onChangeText={(value) => handleInputChange('additionalNotes', value)}
             multiline={true}
@@ -307,9 +333,13 @@ const FakeVaultScreen = () => {
             onPress={handleShareWithDoctor}
             disabled={isUploading}
           >
-            <Text style={styles.shareButtonText}>
-              {isUploading ? '⏳ Uploading...' : '� Scan Doctor QR Code'}
-            </Text>
+            {isUploading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.shareButtonText}>
+                📱 Scan Doctor QR Code
+              </Text>
+            )}
           </TouchableOpacity>
           
           <Text style={styles.buttonHint}>
@@ -335,14 +365,15 @@ const FakeVaultScreen = () => {
             <Text style={styles.scannerTitle}>Scan Doctor's QR Code</Text>
           </View>
           
-            <CameraView
-              style={styles.scanner}
-              facing="back"
-              barcodeScannerSettings={{
-                barcodeTypes: ["qr"],
-              }}
-              onBarcodeScanned={handleBarCodeScanned}
-            />          <View style={styles.scannerOverlay}>
+          <CameraView
+            style={styles.scanner}
+            facing="back"
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+            onBarcodeScanned={handleBarCodeScanned}
+          />
+          <View style={styles.scannerOverlay}>
             <Text style={styles.scannerInstructions}>
               Point your camera at the doctor's QR code to share your health information
             </Text>
@@ -355,32 +386,63 @@ const FakeVaultScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  safeAreaContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    // The background is handled by LinearGradient on the SafeAreaView
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#bdc3c7",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  errorText: {
+    color: "#e74c3c",
+    fontSize: 16,
+    textAlign: "center",
+    fontFamily: "SpaceGrotesk_Regular",
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   backButton: {
     marginRight: 15,
   },
   backButtonText: {
-    color: '#4F46E5',
+    color: '#2ecc71',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: "SpaceGrotesk_Bold",
   },
   headerTitle: {
     color: '#ffffff',
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: "SpaceGrotesk_Bold",
     flex: 1,
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -392,17 +454,24 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
     marginBottom: 25,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   sectionTitle: {
     color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    fontFamily: "SpaceGrotesk_Bold",
   },
   description: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   formSection: {
     marginBottom: 30,
@@ -413,17 +482,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     marginTop: 20,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   input: {
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    borderColor: '#4F46E5',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     color: '#ffffff',
     fontSize: 16,
     minHeight: 45,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   textArea: {
     height: 80,
@@ -435,83 +506,83 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   shareButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#2ecc71',
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 8,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   disabledButton: {
-    backgroundColor: '#666',
+    backgroundColor: '#95a5a6',
   },
   shareButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+    fontFamily: "SpaceGrotesk_Bold",
   },
   buttonHint: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 12,
     textAlign: 'center',
     paddingHorizontal: 20,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   scannerContainer: {
     flex: 1,
     backgroundColor: '#000',
   },
   scannerHeader: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#000',
     paddingHorizontal: 20,
     paddingVertical: 15,
     paddingTop: 50,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
   },
   closeScannerButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
     padding: 10,
   },
   closeScannerText: {
-    color: '#FF6B6B',
+    color: '#e74c3c',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: "SpaceGrotesk_Bold",
   },
   scannerTitle: {
     color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+    marginLeft: -40, // Adjust to center the text
+    fontFamily: "SpaceGrotesk_Bold",
   },
   scanner: {
     flex: 1,
   },
   scannerOverlay: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 50,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   scannerInstructions: {
     color: '#ffffff',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  loadingText: {
-    color: '#ffffff',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  errorText: {
-    color: '#FF6B6B',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 100,
+    fontFamily: "SpaceGrotesk_Regular",
   },
 });
 

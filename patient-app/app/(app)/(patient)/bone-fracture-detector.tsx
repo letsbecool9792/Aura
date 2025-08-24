@@ -12,8 +12,10 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import * as ImagePicker from 'expo-image-picker';
 
 // Using actual X-ray images from local assets with corresponding fracture masks
 const XRAY_SCAN_MAPPING: { [key: string]: any } = {
@@ -169,6 +171,20 @@ const BoneFractureDetectorScreen = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showXraySelector, setShowXraySelector] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#bdc3c7" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
   const handleXraySelection = (xray: any) => {
     setSelectedXray(xray);
     setShowXraySelector(false);
@@ -288,7 +304,13 @@ const BoneFractureDetectorScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -299,11 +321,11 @@ const BoneFractureDetectorScreen = () => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* AI Model Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🦴 AI-Powered Fracture Detection</Text>
-          <Text style={styles.description}>
-            Our application leverages a sophisticated AI model, DANet, pre-trained on the extensive FracAtlas dataset. 
-            We utilize a curated set of 20 sample X-ray images and their corresponding high-fidelity segmentation masks 
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>🦴 AI-Powered Fracture Detection</Text>
+          <Text style={styles.infoDescription}>
+            Our application leverages a sophisticated AI model, DANet, pre-trained on the extensive FracAtlas dataset.
+            We utilize a curated set of 20 sample X-ray images and their corresponding high-fidelity segmentation masks
             for rapid and accurate fracture detection.
           </Text>
         </View>
@@ -373,9 +395,9 @@ const BoneFractureDetectorScreen = () => {
                 <View style={styles.processingSteps}>
                   <Text style={styles.stepText}>
                     {analysisState.progress < 25 ? '🔍 Preprocessing X-ray...' :
-                     analysisState.progress < 50 ? '🦴 Detecting bone structures...' :
-                     analysisState.progress < 75 ? '🔍 Analyzing fracture patterns...' :
-                     '🎯 Generating fracture segmentation...'}
+                      analysisState.progress < 50 ? '🦴 Detecting bone structures...' :
+                      analysisState.progress < 75 ? '🔍 Analyzing fracture patterns...' :
+                      '🎯 Generating fracture segmentation...'}
                   </Text>
                 </View>
               </View>
@@ -428,7 +450,7 @@ const BoneFractureDetectorScreen = () => {
             <Text style={styles.sectionTitle}>📋 Analysis Summary</Text>
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryText}>
-                Our DANet model has successfully analyzed the X-ray scan and identified potential fractures with {analysisResult.confidence}% confidence. 
+                Our DANet model has successfully analyzed the X-ray scan and identified potential fractures with {analysisResult.confidence}% confidence.
                 The fracture segmentation mask highlights areas of concern that should be reviewed by a medical professional.
               </Text>
             </View>
@@ -437,12 +459,15 @@ const BoneFractureDetectorScreen = () => {
 
         {/* Analyze Button */}
         {selectedXray && analysisState.phase !== 'processing' && (
-          <View style={styles.section}>
+          <View style={[styles.section, { padding: 0 }]}>
             <TouchableOpacity 
-              style={styles.analyzeButton} 
+              style={[styles.analyzeButton, (!selectedXray || analysisState.phase === 'processing') && styles.disabledButton]}
               onPress={handleAnalyze}
+              disabled={!selectedXray || analysisState.phase === 'processing'}
             >
-              <Text style={styles.analyzeButtonText}>🔍 Analyze X-ray</Text>
+              <Text style={styles.analyzeButtonText}>
+                {analysisState.phase === 'processing' ? 'Analyzing...' : '🔍 Analyze X-ray'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -455,6 +480,12 @@ const BoneFractureDetectorScreen = () => {
         presentationStyle="pageSheet"
       >
         <SafeAreaView style={styles.modalContainer}>
+          <LinearGradient
+            colors={["#000000ff", "#161616ff"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.background}
+          />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select X-ray Scan</Text>
             <TouchableOpacity
@@ -479,18 +510,37 @@ const BoneFractureDetectorScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeAreaContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000000",
+  },
+  loadingText: {
+    color: "#bdc3c7",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'transparent',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#1a1a2e',
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   backButton: {
     marginRight: 15,
@@ -498,33 +548,56 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: '#4F46E5',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   headerTitle: {
     color: '#ffffff',
     fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
+    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
-  section: {
-    marginBottom: 25,
-    paddingTop: 20,
+  infoSection: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  sectionTitle: {
-    color: '#ffffff',
+  infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: '#ffffff',
+    marginBottom: 10,
+    fontFamily: 'SpaceGrotesk_Bold',
   },
-  description: {
-    color: '#8892b0',
+  infoDescription: {
     fontSize: 14,
+    color: '#bdc3c7',
     lineHeight: 20,
-    textAlign: 'justify',
+    fontFamily: 'SpaceGrotesk_Regular',
+  },
+  section: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 15,
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   selectedImageContainer: {
     alignItems: 'center',
@@ -537,71 +610,202 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   imageLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 12,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   placeholderContainer: {
     height: 200,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#4F46E5',
+    borderColor: "rgba(255, 255, 255, 0.2)",
     borderStyle: 'dashed',
   },
   placeholderText: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 16,
-    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 10,
   },
   selectButton: {
     flex: 1,
     backgroundColor: '#4F46E5',
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
-    marginRight: 10,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   selectButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#4F46E5',
-    marginLeft: 10,
   },
   uploadButtonText: {
     color: '#4F46E5',
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   analyzeButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#4F46E5',
     paddingVertical: 15,
-    paddingHorizontal: 30,
     borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#95a5a6',
   },
   analyzeButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
+  },
+  resultsContainer: {
+    marginTop: 10,
+  },
+  imageComparisonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  imageComparisonItem: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  imageComparisonLabel: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Bold',
+  },
+  resultImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 8,
+  },
+  analysisStats: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  statItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statLabel: {
+    color: '#bdc3c7',
+    fontSize: 14,
+    fontFamily: 'SpaceGrotesk_Regular',
+  },
+  statValue: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
+  },
+  summaryContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  summaryText: {
+    color: '#bdc3c7',
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'SpaceGrotesk_Regular',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    fontFamily: 'SpaceGrotesk_Bold',
+  },
+  closeModalButton: {
+    padding: 5,
+  },
+  closeModalText: {
+    color: '#e74c3c',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
+  },
+  xrayGrid: {
+    padding: 20,
+  },
+  xrayItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    margin: 5,
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  xrayThumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  xrayLabel: {
+    color: '#bdc3c7',
+    fontSize: 10,
+    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   processingContainer: {
     alignItems: 'center',
@@ -618,9 +822,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   processingLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 14,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   progressContainer: {
     width: '100%',
@@ -628,7 +833,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
@@ -639,123 +844,21 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressText: {
-    color: '#8892b0',
-    fontSize: 12,
+    color: '#ffffff',
+    fontSize: 14,
     textAlign: 'center',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   processingSteps: {
-    alignItems: 'center',
+    marginTop: 10,
   },
   stepText: {
     color: '#4F46E5',
     fontSize: 14,
-    fontWeight: '500',
-  },
-  resultsContainer: {
-    marginTop: 20,
-  },
-  imageComparisonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  imageComparisonItem: {
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  imageComparisonLabel: {
-    color: '#8892b0',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
     textAlign: 'center',
-  },
-  resultImage: {
-    width: 140,
-    height: 140,
-    borderRadius: 8,
-  },
-  analysisStats: {
-    backgroundColor: '#16213e',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  statItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  statLabel: {
-    color: '#8892b0',
-    fontSize: 14,
-  },
-  statValue: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryContainer: {
-    backgroundColor: '#16213e',
-    padding: 15,
-    borderRadius: 8,
-  },
-  summaryText: {
-    color: '#8892b0',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#0f0f23',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a2e',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
-  },
-  modalTitle: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  closeModalButton: {
-    padding: 5,
-  },
-  closeModalText: {
-    color: '#FF6B6B',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  xrayGrid: {
-    padding: 20,
-  },
-  xrayItem: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-    margin: 5,
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#16213e',
-  },
-  xrayThumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  xrayLabel: {
-    color: '#8892b0',
-    fontSize: 10,
-    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
 });
 

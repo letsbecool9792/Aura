@@ -12,8 +12,10 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFonts, SpaceGrotesk_400Regular, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import * as ImagePicker from 'expo-image-picker';
 
 // Using actual brain scan images from local assets
 const BRAIN_SCAN_MAPPING: { [key: string]: any } = {
@@ -170,6 +172,20 @@ const BrainTumorDetectorScreen = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showScanSelector, setShowScanSelector] = useState(false);
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
+    SpaceGrotesk_Bold: SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#bdc3c7" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
   const handleScanSelection = (scan: any) => {
     setSelectedScan(scan);
     setShowScanSelector(false);
@@ -290,7 +306,13 @@ const BrainTumorDetectorScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <LinearGradient
+        colors={["#000000ff", "#161616ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.background}
+      />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -304,7 +326,7 @@ const BrainTumorDetectorScreen = () => {
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>🧠 AI-Powered Brain Tumor Detection</Text>
           <Text style={styles.infoDescription}>
-            Advanced deep learning model for precise tumor segmentation in brain MRI scans. 
+            Advanced deep learning model for precise tumor segmentation in brain MRI scans.
             Our AI analyzes brain images to identify and highlight potential tumor regions.
           </Text>
         </View>
@@ -368,7 +390,7 @@ const BrainTumorDetectorScreen = () => {
         {analysisState.phase !== 'idle' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              {analysisState.phase === 'processing' ? '� Processing Brain Scan' : '�📊 Analysis Results'}
+              {analysisState.phase === 'processing' ? 'Processing Brain Scan' : 'Analysis Results'}
             </Text>
             
             {analysisState.phase === 'processing' && (
@@ -399,9 +421,9 @@ const BrainTumorDetectorScreen = () => {
                 <View style={styles.processingSteps}>
                   <Text style={styles.stepText}>
                     {analysisState.progress < 25 ? '🔍 Preprocessing image...' :
-                     analysisState.progress < 50 ? '🧠 Detecting brain regions...' :
-                     analysisState.progress < 75 ? '🎯 Identifying tumor areas...' :
-                     '✨ Finalizing segmentation...'}
+                      analysisState.progress < 50 ? '🧠 Detecting brain regions...' :
+                      analysisState.progress < 75 ? '🎯 Identifying tumor areas...' :
+                      '✨ Finalizing segmentation...'}
                   </Text>
                 </View>
               </View>
@@ -453,7 +475,7 @@ const BrainTumorDetectorScreen = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>📋 Analysis Summary</Text>
             <Text style={styles.summaryText}>
-              The AI model has successfully processed the brain scan and identified potential tumor regions. 
+              The AI model has successfully processed the brain scan and identified potential tumor regions.
               The segmentation highlights areas requiring further medical evaluation.
             </Text>
           </View>
@@ -467,6 +489,12 @@ const BrainTumorDetectorScreen = () => {
         presentationStyle="pageSheet"
       >
         <SafeAreaView style={styles.modalContainer}>
+          <LinearGradient
+            colors={["#000000ff", "#161616ff"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.background}
+          />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Brain Scan</Text>
             <TouchableOpacity
@@ -491,69 +519,94 @@ const BrainTumorDetectorScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeAreaContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+  },
+  background: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: "100%",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000000",
+  },
+  loadingText: {
+    color: "#bdc3c7",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+    fontFamily: "SpaceGrotesk_Regular",
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: 'transparent',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   backButton: {
     marginRight: 15,
   },
   backButtonText: {
-    color: '#4F46E5',
+    color: '#FF6B6B',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#ffffff',
     flex: 1,
+    textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   content: {
     flex: 1,
     padding: 20,
   },
   infoSection: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#16213e',
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 10,
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   infoDescription: {
     fontSize: 14,
-    color: '#8892b0',
+    color: '#bdc3c7',
     lineHeight: 20,
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   section: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     padding: 20,
     borderRadius: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#16213e',
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 15,
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   selectedImageContainer: {
     alignItems: 'center',
@@ -566,24 +619,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   imageLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 12,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   placeholderContainer: {
     height: 200,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#2d3748',
+    borderColor: "rgba(255, 255, 255, 0.2)",
     borderStyle: 'dashed',
   },
   placeholderText: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 16,
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -592,45 +647,58 @@ const styles = StyleSheet.create({
   },
   selectButton: {
     flex: 1,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#FF6B6B',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   selectButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#4F46E5',
+    borderColor: '#FF6B6B',
   },
   uploadButtonText: {
-    color: '#4F46E5',
+    color: '#FF6B6B',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   analyzeButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#4F46E5',
     paddingVertical: 15,
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   disabledButton: {
-    backgroundColor: '#2d3748',
+    backgroundColor: '#95a5a6',
   },
   analyzeButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   resultsContainer: {
     marginTop: 10,
@@ -648,9 +716,10 @@ const styles = StyleSheet.create({
   imageComparisonLabel: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   resultImage: {
     width: 140,
@@ -658,10 +727,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   analysisStats: {
-    backgroundColor: '#16213e',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   statItem: {
     flexDirection: 'row',
@@ -669,65 +740,69 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 14,
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   statValue: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   warningContainer: {
-    backgroundColor: '#2d1810',
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
     padding: 15,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: '#e74c3c',
   },
   warningText: {
-    color: '#FF6B6B',
+    color: '#e74c3c',
     fontSize: 12,
     lineHeight: 16,
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: 'transparent',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#16213e',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   closeModalButton: {
     padding: 5,
   },
   closeModalText: {
-    color: '#FF6B6B',
+    color: '#e74c3c',
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   scanGrid: {
     padding: 20,
   },
   scanItem: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     margin: 5,
     borderRadius: 8,
     padding: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#16213e',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   scanThumbnail: {
     width: 80,
@@ -738,9 +813,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 10,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   processingContainer: {
     alignItems: 'center',
@@ -757,9 +833,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   processingLabel: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 14,
     textAlign: 'center',
+    fontFamily: 'SpaceGrotesk_Regular',
   },
   progressContainer: {
     width: '100%',
@@ -767,7 +844,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
@@ -781,7 +858,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   processingSteps: {
     marginTop: 10,
@@ -790,12 +868,14 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     fontSize: 14,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: 'bold',
+    fontFamily: 'SpaceGrotesk_Bold',
   },
   summaryText: {
-    color: '#8892b0',
+    color: '#bdc3c7',
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: 'SpaceGrotesk_Regular',
   },
 });
 
