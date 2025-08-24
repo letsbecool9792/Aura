@@ -9,7 +9,7 @@ interface AuthContextType {
   user: {
     role: "patient" | "doctor" | null;
     name: string | null;
-    walletAddress: string | null;
+    email: string | null;
     isVerified?: boolean;
     specialization?: string; // For doctors
     licenseNumber?: string; // For doctors
@@ -18,14 +18,14 @@ interface AuthContextType {
   login: (userData: {
     role: "patient" | "doctor";
     name: string;
-    walletAddress: string;
+    email: string;
   }) => void;
   logout: () => void;
   updateUser: (
     data: Partial<{
       role: "patient" | "doctor";
       name: string;
-      walletAddress: string;
+      email: string;
     }>
   ) => void;
   isLoading: boolean;
@@ -39,9 +39,9 @@ const SESSION_KEY = "user_session";
 
 function AuthProviderComponent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{
-    role: "patient" | null;
+    role: "patient" | "doctor" | null;
     name: string | null;
-    walletAddress: string | null;
+    email: string | null;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigationState = useRootNavigationState();
@@ -66,9 +66,9 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
 
   // The login function for the app
   const login = async (userData: {
-    role: "patient";
+    role: "patient" | "doctor";
     name: string;
-    walletAddress: string;
+    email: string;
   }) => {
     try {
       // Save user data
@@ -97,11 +97,15 @@ function AuthProviderComponent({ children }: { children: React.ReactNode }) {
     data: Partial<{
       role: "patient" | "doctor";
       name: string;
-      walletAddress: string;
+      email: string;
     }>
   ) => {
     try {
-      const updatedUser = { ...user, ...data };
+      const updatedUser = { ...user, ...data } as {
+        role: "patient" | "doctor" | null;
+        name: string | null;
+        email: string | null;
+      };
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
       setUser(updatedUser);
     } catch (error) {

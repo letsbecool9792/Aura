@@ -66,20 +66,20 @@ export default function Welcome() {
 
       // Mock Google user data
       const googleUser = {
-        name: "John Doe",
-        email: "john.doe@gmail.com",
+        name: "Suparno Saha",
+        email: "saha.suparno24@gmail.com",
         id: "google_" + Math.random().toString(36).substring(2, 15),
       };
 
       // Login with temporary data
       await login({
-        role: "pending", // Set role as pending until selection
+        role: "patient", // Set role as patient directly
         name: googleUser.name,
-        walletAddress: "google-auth-temp",
+        email: googleUser.email,
       });
 
-      // Navigate to web3login after successful sign-in
-      router.push("/(auth)/web3login");
+      // Navigate to patient-dashboard after successful sign-in
+      router.push("/(app)/(patient)/patient-dashboard/");
     } catch (error) {
       // Use a custom modal instead of Alert.alert
       console.error("Google authentication failed:", error);
@@ -130,7 +130,7 @@ export default function Welcome() {
             <Text style={styles.title}>AURA</Text>
           </View>
           <Text style={styles.tagline}>
-            Your secure health vault on the blockchain
+            Future of personal healthcare
           </Text>
         </View>
 

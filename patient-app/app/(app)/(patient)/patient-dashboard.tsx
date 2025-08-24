@@ -400,15 +400,15 @@ Format all responses clearly, using short paragraphs or bullet points for lists.
 
         {/* Bone Fracture Detection Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🦴 Bone Fracture Detection</Text>
+          <Text style={styles.sectionTitle}>Bone Fracture Detection</Text>
           <Text style={styles.description}>
             AI-powered fracture detection using DANet model trained on FracAtlas dataset
           </Text>
           <TouchableOpacity 
-            style={[styles.scanButton, { backgroundColor: '#4F46E5' }]} 
+            style={[styles.scanButton, { backgroundColor: '#e546abff' }]} 
             onPress={() => router.push("/(app)/(patient)/bone-fracture-detector" as any)}
           >
-            <Text style={styles.scanButtonText}>🦴 Analyze X-ray Scan</Text>
+            <Text style={styles.scanButtonText}>Analyze X-ray Scan</Text>
           </TouchableOpacity>
         </View>
 
@@ -428,21 +428,21 @@ Format all responses clearly, using short paragraphs or bullet points for lists.
 
         {/* Health Assistant Chatbot Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🤖 Aura Health Assistant</Text>
+          <Text style={styles.sectionTitle}>Aura Health Assistant</Text>
           <Text style={styles.description}>
             Chat with your AI health assistant about your medical records and health questions
           </Text>
           <TouchableOpacity 
-            style={[styles.scanButton, { backgroundColor: '#8B5CF6' }]} 
+            style={[styles.scanButton, { backgroundColor: '#6db6eeff' }]} 
             onPress={() => setShowChatbot(true)}
           >
-            <Text style={styles.scanButtonText}>💬 Chat with Assistant</Text>
+            <Text style={styles.scanButtonText}>Chat with Assistant</Text>
           </TouchableOpacity>
         </View>
 
         {/* Healthcare Finder Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏥 Healthcare Finder</Text>
+          <Text style={styles.sectionTitle}>Healthcare Finder</Text>
           <Text style={styles.description}>
             Find nearby hospitals and doctors using your current location
           </Text>
@@ -450,7 +450,7 @@ Format all responses clearly, using short paragraphs or bullet points for lists.
             style={[styles.scanButton, { backgroundColor: '#e74c3c' }]} 
             onPress={() => router.push("/(app)/(patient)/healthcare-finder" as any)}
           >
-            <Text style={styles.scanButtonText}>🔍 Find Healthcare</Text>
+            <Text style={styles.scanButtonText}>Find Healthcare</Text>
           </TouchableOpacity>
         </View>
 

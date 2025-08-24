@@ -1,5 +1,8 @@
 import { Redirect } from "expo-router";
 import { useAuth } from "../providers/AuthProvider";
+import { LogBox } from 'react-native';
+
+LogBox.ignoreAllLogs(true);
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();

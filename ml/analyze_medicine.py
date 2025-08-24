@@ -26,7 +26,7 @@ def run_analysis(image_path):
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file.")
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
     except Exception as e:
         return json.dumps({"status": "error", "message": f"API Configuration failed: {e}"})
 
