@@ -279,6 +279,34 @@ export default function PatientDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Brain Tumor Detection Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🧠 Brain Tumor Detection</Text>
+          <Text style={styles.description}>
+            AI-powered tumor segmentation from brain scan images
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#FF6B6B' }]} 
+            onPress={() => router.push("/(app)/(patient)/brain-tumor-detector" as any)}
+          >
+            <Text style={styles.scanButtonText}>🧠 Analyze Brain Scan</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bone Fracture Detection Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🦴 Bone Fracture Detection</Text>
+          <Text style={styles.description}>
+            AI-powered fracture detection using DANet model trained on FracAtlas dataset
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#4F46E5' }]} 
+            onPress={() => router.push("/(app)/(patient)/bone-fracture-detector" as any)}
+          >
+            <Text style={styles.scanButtonText}>🦴 Analyze X-ray Scan</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Add New Record</Text>

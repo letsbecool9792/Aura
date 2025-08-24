@@ -18,6 +18,9 @@ from django.core.files.base import ContentFile
 import subprocess
 import json
 import os
+import uuid
+from .models import DoctorSession, PatientVaultData
+from django.views.decorators.http import require_http_methods
 import sys
 
 logger = logging.getLogger(__name__)
@@ -371,3 +374,110 @@ def identify_medicine_view(request):
         default_storage.delete(temp_path)
 
     return JsonResponse(response_data)
+
+
+# Vault System Views
+
+@csrf_exempt
+@api_view(['POST'])
+def create_doctor_session(request):
+    """Create a new doctor session and return session ID"""
+    try:
+        doctor_name = request.data.get('doctor_name', 'Anonymous Doctor')
+        session = DoctorSession.objects.create(doctor_name=doctor_name)
+        
+        return Response({
+            'session_id': str(session.session_id),
+            'doctor_name': session.doctor_name,
+            'created_at': session.created_at,
+            'qr_url': f"{request.build_absolute_uri('/')[:-1]}/api/vault/upload/{session.session_id}/"
+        }, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_patient_data(request, session_id):
+    """Receive patient data for a specific doctor session"""
+    try:
+        # Find the session
+        session = DoctorSession.objects.get(session_id=session_id, is_active=True)
+        
+        # Parse JSON data
+        data = json.loads(request.body)
+        
+        # Create patient vault data
+        patient_data = PatientVaultData.objects.create(
+            session=session,
+            name=data.get('name', ''),
+            age=data.get('age', ''),
+            symptoms=data.get('symptoms', ''),
+            medical_history=data.get('medicalHistory', ''),
+            current_medications=data.get('currentMedications', ''),
+            allergies=data.get('allergies', ''),
+            emergency_contact=data.get('emergencyContact', ''),
+            additional_notes=data.get('additionalNotes', '')
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Patient data received successfully',
+            'patient_id': patient_data.id,
+            'timestamp': patient_data.timestamp
+        })
+        
+    except DoctorSession.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid or expired session'
+        }, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@api_view(['GET'])
+def get_session_data(request, session_id):
+    """Get all patient data for a specific doctor session"""
+    try:
+        session = DoctorSession.objects.get(session_id=session_id, is_active=True)
+        patient_data_list = PatientVaultData.objects.filter(session=session).order_by('-timestamp')
+        
+        data = []
+        for patient in patient_data_list:
+            data.append({
+                'id': patient.id,
+                'name': patient.name,
+                'age': patient.age,
+                'symptoms': patient.symptoms,
+                'medical_history': patient.medical_history,
+                'current_medications': patient.current_medications,
+                'allergies': patient.allergies,
+                'emergency_contact': patient.emergency_contact,
+                'additional_notes': patient.additional_notes,
+                'timestamp': patient.timestamp
+            })
+        
+        return Response({
+            'session_id': str(session.session_id),
+            'doctor_name': session.doctor_name,
+            'patients': data
+        }, status=status.HTTP_200_OK)
+        
+    except DoctorSession.DoesNotExist:
+        return Response({
+            'error': 'Session not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
