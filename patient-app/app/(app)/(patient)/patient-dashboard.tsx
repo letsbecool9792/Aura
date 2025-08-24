@@ -220,6 +220,20 @@ export default function PatientDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Brain Tumor Detection Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🧠 Brain Tumor Detection</Text>
+          <Text style={styles.description}>
+            AI-powered tumor segmentation from brain scan images
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#FF6B6B' }]} 
+            onPress={() => router.push("/(app)/(patient)/brain-tumor-detector" as any)}
+          >
+            <Text style={styles.scanButtonText}>🧠 Analyze Brain Scan</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✏️ Add New Record</Text>
