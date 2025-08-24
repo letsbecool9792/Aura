@@ -234,6 +234,20 @@ export default function PatientDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Bone Fracture Detection Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🦴 Bone Fracture Detection</Text>
+          <Text style={styles.description}>
+            AI-powered fracture detection using DANet model trained on FracAtlas dataset
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#4F46E5' }]} 
+            onPress={() => router.push("/(app)/(patient)/bone-fracture-detector" as any)}
+          >
+            <Text style={styles.scanButtonText}>🦴 Analyze X-ray Scan</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>✏️ Add New Record</Text>
