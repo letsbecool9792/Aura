@@ -440,6 +440,20 @@ Format all responses clearly, using short paragraphs or bullet points for lists.
           </TouchableOpacity>
         </View>
 
+        {/* Healthcare Finder Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🏥 Healthcare Finder</Text>
+          <Text style={styles.description}>
+            Find nearby hospitals and doctors using your current location
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#e74c3c' }]} 
+            onPress={() => router.push("/(app)/(patient)/healthcare-finder" as any)}
+          >
+            <Text style={styles.scanButtonText}>🔍 Find Healthcare</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Add New Record</Text>
