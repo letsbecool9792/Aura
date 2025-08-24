@@ -11,6 +11,8 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
@@ -22,9 +24,14 @@ import {
   SpaceGrotesk_400Regular,
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Simulated Web3 Backend
 const mockIPFSStorage: { [key: string]: any } = {};
+
+// Initialize Gemini AI
+const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "AIzaSyDw8sTnVKXeN0WGkCaAtO7z_kWh5khPe3o"; // Fallback for demo
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Document Types for better UX
 const DOCUMENT_TYPES = [
@@ -37,6 +44,14 @@ const DOCUMENT_TYPES = [
   { id: "surgery", label: "Surgery Report" },
   { id: "other", label: "Other Document" },
 ];
+
+// Chat Message Type
+interface ChatMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
 // Mock functions
 const uploadToIPFS = async (data: any): Promise<string> => {
@@ -86,6 +101,12 @@ export default function PatientDashboard() {
   const [selectedDocumentType, setSelectedDocumentType] = useState("");
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Chatbot states
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_Regular: SpaceGrotesk_400Regular,
@@ -227,6 +248,90 @@ export default function PatientDashboard() {
     }
   };
 
+  const generateHealthContext = () => {
+    const context = {
+      patientName: user?.name || "Patient",
+      healthRecords: records.map(record => ({
+        type: record.type,
+        data: record.data,
+        hasImage: !!record.imageUri,
+        hash: record.hash
+      })),
+      totalRecords: records.length
+    };
+
+    return `You are Aura Health Assistant, an AI medical assistant helping ${context.patientName}. 
+
+Patient Health Context:
+- Patient Name: ${context.patientName}
+- Total Health Records: ${context.totalRecords}
+
+Health Records Summary:
+${context.healthRecords.map((record, index) => 
+  `${index + 1}. ${record.type}: ${record.data}${record.hasImage ? ' (includes medical image/document)' : ''}`
+).join('\n')}
+
+Rules:
+1. You can explain patient health records, medications, allergies, lab results, and AI scan results in clear, layman-friendly language.
+2. You do NOT give medical advice. Always remind the user to consult a licensed doctor for diagnosis or treatment.
+3. If the user asks about medications, check the patient’s uploaded medications info first before responding. Mention side effects or interactions only if present in the data.
+4. If the user uploads a new image for AI analysis (e.g., X-ray or pill photo), interpret the output from the corresponding model and explain it clearly.
+5. Be professional, concise, and supportive, while staying friendly and approachable.
+6. Always reference only the data available in the app; never hallucinate patient-specific info.
+7. When asked general health questions outside the patient’s data, provide safe, general guidance or direct them to consult a professional.
+AND MOST IMPORTANT:
+8. Dont yap too much dont repeat that you cant provide medical advice every message, try to keep them short. u dont need to remind the user to talk to a doc every message. 
+
+Format all responses clearly, using short paragraphs or bullet points for lists.`;
+
+  };
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      text: chatInput.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput("");
+    setIsChatLoading(true);
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const healthContext = generateHealthContext();
+      const prompt = `${healthContext}\n\nPatient Question: ${userMessage.text}`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const botResponse = response.text();
+
+      const botMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: botResponse,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -321,6 +426,20 @@ export default function PatientDashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Health Assistant Chatbot Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🤖 Aura Health Assistant</Text>
+          <Text style={styles.description}>
+            Chat with your AI health assistant about your medical records and health questions
+          </Text>
+          <TouchableOpacity 
+            style={[styles.scanButton, { backgroundColor: '#8B5CF6' }]} 
+            onPress={() => setShowChatbot(true)}
+          >
+            <Text style={styles.scanButtonText}>💬 Chat with Assistant</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Add New Record Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Add New Record</Text>
@@ -366,12 +485,12 @@ export default function PatientDashboard() {
                 <Text style={styles.recordHash}>
                   Hash: {record.hash.substring(0, 20)}...
                 </Text>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={styles.shareButton}
                   onPress={() => handleShareRecord(record)}
                 >
                   <Text style={styles.shareButtonText}>Share</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             ))
           )}
@@ -405,6 +524,109 @@ export default function PatientDashboard() {
           </View>
         )}
       </ScrollView>
+
+      {/* Chatbot Modal */}
+      <Modal
+        visible={showChatbot}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <LinearGradient
+            colors={["#000000ff", "#161616ff"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.background}
+          />
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>🤖 Aura Health Assistant</Text>
+            <TouchableOpacity
+              style={styles.closeModalButton}
+              onPress={() => setShowChatbot(false)}
+            >
+              <Text style={styles.closeModalButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <KeyboardAvoidingView 
+            style={styles.chatContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView 
+              style={styles.chatMessages}
+              contentContainerStyle={styles.chatMessagesContent}
+            >
+              {chatMessages.length === 0 ? (
+                <View style={styles.chatWelcome}>
+                  <Text style={styles.chatWelcomeTitle}>Welcome to Aura Health Assistant! 👋</Text>
+                  <Text style={styles.chatWelcomeText}>
+                    I have access to your {records.length} health records and can help you with:
+                  </Text>
+                  <Text style={styles.chatWelcomeList}>
+                    • Questions about your health records{'\n'}
+                    • General health information{'\n'}
+                    • Medication reminders{'\n'}
+                    • Wellness tips{'\n'}
+                    • When to see a doctor
+                  </Text>
+                  <Text style={styles.chatDisclaimer}>
+                    Remember: I'm here to provide information, not replace professional medical advice.
+                  </Text>
+                </View>
+              ) : (
+                chatMessages.map((message) => (
+                  <View
+                    key={message.id}
+                    style={[
+                      styles.chatMessage,
+                      message.sender === 'user' ? styles.userMessage : styles.botMessage
+                    ]}
+                  >
+                    <Text style={[
+                      styles.chatMessageText,
+                      message.sender === 'user' ? styles.userMessageText : styles.botMessageText
+                    ]}>
+                      {message.text}
+                    </Text>
+                    <Text style={styles.chatMessageTime}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                ))
+              )}
+              {isChatLoading && (
+                <View style={[styles.chatMessage, styles.botMessage]}>
+                  <ActivityIndicator size="small" color="#ffffff" />
+                  <Text style={styles.botMessageText}>Aura is thinking...</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.chatInputContainer}>
+              <TextInput
+                style={styles.chatInput}
+                placeholder="Ask me about your health..."
+                placeholderTextColor="#bdc3c7"
+                value={chatInput}
+                onChangeText={setChatInput}
+                multiline
+                maxLength={500}
+                editable={!isChatLoading}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.chatSendButton,
+                  (!chatInput.trim() || isChatLoading) && styles.chatSendButtonDisabled
+                ]}
+                onPress={sendChatMessage}
+                disabled={!chatInput.trim() || isChatLoading}
+              >
+                <Text style={styles.chatSendButtonText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Document Scanner Modal */}
       <Modal
@@ -825,5 +1047,127 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: "#95a5a6",
+  },
+  // Chatbot Styles
+  chatContainer: {
+    flex: 1,
+  },
+  chatMessages: {
+    flex: 1,
+    padding: 15,
+  },
+  chatMessagesContent: {
+    paddingBottom: 20,
+  },
+  chatWelcome: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  chatWelcomeTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 15,
+    textAlign: "center",
+    fontFamily: "SpaceGrotesk_Bold",
+  },
+  chatWelcomeText: {
+    fontSize: 16,
+    color: "#bdc3c7",
+    marginBottom: 15,
+    lineHeight: 22,
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  chatWelcomeList: {
+    fontSize: 16,
+    color: "#ffffff",
+    marginBottom: 15,
+    lineHeight: 24,
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  chatDisclaimer: {
+    fontSize: 14,
+    color: "#95a5a6",
+    fontStyle: "italic",
+    textAlign: "center",
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  chatMessage: {
+    marginBottom: 15,
+    maxWidth: "85%",
+  },
+  userMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#8B5CF6",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 4,
+  },
+  botMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 18,
+  },
+  chatMessageText: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: "SpaceGrotesk_Regular",
+    padding: 12,
+  },
+  userMessageText: {
+    color: "#ffffff",
+  },
+  botMessageText: {
+    color: "#ffffff",
+  },
+  chatMessageTime: {
+    fontSize: 12,
+    color: "#bdc3c7",
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  chatInputContainer: {
+    flexDirection: "row",
+    padding: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    alignItems: "flex-end",
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 1,
+    borderColor: "#bdc3c7",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: "#ffffff",
+    maxHeight: 100,
+    marginRight: 10,
+    fontFamily: "SpaceGrotesk_Regular",
+  },
+  chatSendButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  chatSendButtonDisabled: {
+    backgroundColor: "#95a5a6",
+  },
+  chatSendButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "SpaceGrotesk_Bold",
   },
 });
