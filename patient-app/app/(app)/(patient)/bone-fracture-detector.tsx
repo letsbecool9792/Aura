@@ -537,6 +537,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'transparent',
+        marginTop: 50,
+
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,

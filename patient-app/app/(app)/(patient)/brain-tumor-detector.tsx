@@ -545,6 +545,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+        marginTop: 50,
+
     backgroundColor: 'transparent',
     paddingHorizontal: 20,
     paddingVertical: 15,
