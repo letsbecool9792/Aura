@@ -1,7 +1,7 @@
+# Add to api/models.py
+
 from django.db import models
 import uuid
-
-# Create your models here.
 
 class DoctorSession(models.Model):
     session_id = models.UUIDField(default=uuid.uuid4, unique=True)

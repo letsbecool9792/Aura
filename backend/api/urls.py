@@ -11,4 +11,9 @@ urlpatterns = [
     path('api/auth/success/', views.auth_success, name='auth_success'),
     path('api/auth/logout/', views.auth_logout, name='auth_logout'),
     path('api/identify-medicine/', views.identify_medicine_view, name='identify_medicine'),
+    
+    # Vault System URLs
+    path('api/vault/create-session/', views.create_doctor_session, name='create_doctor_session'),
+    path('api/vault/upload/<uuid:session_id>/', views.upload_patient_data, name='upload_patient_data'),
+    path('api/vault/session/<uuid:session_id>/', views.get_session_data, name='get_session_data'),
 ]
