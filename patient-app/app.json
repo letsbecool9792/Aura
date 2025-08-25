@@ -2,7 +2,6 @@
   "expo": {
     "name": "Aura",
     "slug": "aura",
-    "package": "com.asterisk.aura",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,6 +16,7 @@
       }
     },
     "android": {
+      "package": "com.asterisk.aura",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,8 +25,7 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ],
-      "package": "com.anonymous.aura"
+      ]
     },
     "web": {
       "bundler": "metro",
