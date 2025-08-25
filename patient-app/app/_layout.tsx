@@ -6,6 +6,7 @@ import {
 } from "@expo-google-fonts/eb-garamond";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
