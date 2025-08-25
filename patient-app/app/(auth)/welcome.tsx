@@ -16,11 +16,15 @@ import {
   useFonts,
   SpaceGrotesk_400Regular,
   SpaceGrotesk_700Bold,
-} from "@expo-google-fonts/space-grotesk"; // New font package
+} from "@expo-google-fonts/space-grotesk";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
-import { SvgXml } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
+
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+} from "@react-native-google-signin/google-signin";
 
 const { width, height } = Dimensions.get("window");
 
@@ -103,7 +107,6 @@ export default function Welcome() {
         translucent
       />
       <LinearGradient
-        // Metallic, chrome-like gradient
         colors={["#000000ff", "#181c2cff"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

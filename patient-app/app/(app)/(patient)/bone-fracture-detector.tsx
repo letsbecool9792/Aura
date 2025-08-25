@@ -458,7 +458,7 @@ const BoneFractureDetectorScreen = () => {
         )}
 
         {/* Analyze Button */}
-        {selectedXray && analysisState.phase !== 'processing' && (
+        {selectedXray && (
           <View style={[styles.section, { padding: 0 }]}>
             <TouchableOpacity 
               style={[styles.analyzeButton, (!selectedXray || analysisState.phase === 'processing') && styles.disabledButton]}

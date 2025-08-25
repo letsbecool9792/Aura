@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "patient-app",
-    "slug": "patient-app",
+    "name": "Aura",
+    "slug": "aura",
+    "package": "com.asterisk.aura",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,14 +10,23 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.asterisk.aura",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.aura"
     },
     "web": {
       "bundler": "metro",
@@ -24,6 +34,9 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "@react-native-google-signin/google-signin"
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -37,6 +50,12 @@
       "expo-secure-store",
       "expo-camera",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b94a3f57-7ab8-411f-8d52-6f14364f690c"
+      }
+    }
   }
 }
