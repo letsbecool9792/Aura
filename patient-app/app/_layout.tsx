@@ -15,6 +15,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '',
+    });
+  }, []);
+
+  useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }

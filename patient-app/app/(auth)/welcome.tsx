@@ -24,6 +24,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   GoogleSignin,
   GoogleSigninButton,
+  statusCodes,
 } from "@react-native-google-signin/google-signin";
 
 const { width, height } = Dimensions.get("window");
@@ -34,7 +35,6 @@ SplashScreen.preventAutoHideAsync();
 export default function Welcome() {
   const circleAnim = useRef(new Animated.Value(0)).current;
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const { login } = useAuth();
 
   // Load the desired fonts
   const [fontsLoaded] = useFonts({
@@ -61,36 +61,33 @@ export default function Welcome() {
     return null;
   }
 
-  const handleSignInWithGoogle = async () => {
-    setIsAuthenticating(true);
+ const { login } = useAuth(); // Your custom login function
 
-    try {
-      // Simulate Google authentication
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+const handleSignInWithGoogle = async () => {
+  try {
+    await GoogleSignin.hasPlayServices();
+    const userInfo = await GoogleSignin.signIn();
+    
+    console.log("Google User Info:", userInfo.user);
 
-      // Mock Google user data
-      const googleUser = {
-        name: "Suparno Saha",
-        email: "saha.suparno24@gmail.com",
-        id: "google_" + Math.random().toString(36).substring(2, 15),
-      };
+    // Pass the real user data to your app's login logic
+    await login({
+      role: "patient",
+      name: userInfo.user.name,
+      email: userInfo.user.email,
+    });
 
-      // Login with temporary data
-      await login({
-        role: "patient", // Set role as patient directly
-        name: googleUser.name,
-        email: googleUser.email,
-      });
+    router.replace("/(app)/(patient)/patient-dashboard/");
 
-      // Navigate to patient-dashboard after successful sign-in
-      router.push("/(app)/(patient)/patient-dashboard/");
-    } catch (error) {
-      // Use a custom modal instead of Alert.alert
-      console.error("Google authentication failed:", error);
-    } finally {
-      setIsAuthenticating(false);
+  } catch (error: any) {
+    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      console.log('User cancelled the login flow');
+    } else {
+      console.error("Google Sign-In Error", error);
+      Alert.alert("Sign-In Error", "An error occurred during sign-in.");
     }
-  };
+  }
+};
 
   const scale = circleAnim.interpolate({
     inputRange: [0, 1],
@@ -137,19 +134,13 @@ export default function Welcome() {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, isAuthenticating && styles.disabledButton]}
-          onPress={handleSignInWithGoogle}
-          disabled={isAuthenticating}
-        >
-          <Image
-            source={require("../../assets/images/google-icon.png")}
-            style={styles.googleIcon}
-          />
-          <Text style={styles.buttonText}>
-            {isAuthenticating ? "Connecting..." : "Sign in with Google"}
-          </Text>
-        </TouchableOpacity>
+        <GoogleSigninButton
+  style={{ width: 230, height: 48 }} // You can style it
+  size={GoogleSigninButton.Size.Wide}
+  color={GoogleSigninButton.Color.Light} // Or Color.Dark
+  onPress={handleSignInWithGoogle}
+  disabled={isAuthenticating}
+/>
       </View>
     </View>
   );
