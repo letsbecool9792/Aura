@@ -67,14 +67,12 @@ const handleSignInWithGoogle = async () => {
   try {
     await GoogleSignin.hasPlayServices();
     const userInfo = await GoogleSignin.signIn();
+    const user = userInfo?.data?.user;
     
-    console.log("Google User Info:", userInfo.user);
-
-    // Pass the real user data to your app's login logic
     await login({
       role: "patient",
-      name: userInfo.user.name,
-      email: userInfo.user.email,
+      name: user?.name || "",
+      email: user?.email || "",
     });
 
     router.replace("/(app)/(patient)/patient-dashboard/");
